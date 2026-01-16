@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Roobert Font */
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/Roobert-Regular.woff2') format('woff2'),
+       url('/fonts/Roobert-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/Roobert-Medium.woff2') format('woff2'),
+       url('/fonts/Roobert-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/Roobert-SemiBold.woff2') format('woff2'),
+       url('/fonts/Roobert-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/Roobert-Bold.woff2') format('woff2'),
+       url('/fonts/Roobert-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The Dreamers Edition Font */
+@font-face {
+  font-family: 'TheDreamersEdition';
+  src: url('/fonts/TheDreamersEditionRubberStamp.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    font-family: 'Roobert', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-cream text-stone-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-forest text-white py-3 px-6 rounded-lg font-medium hover:bg-forest-dark transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-sand text-white py-3 px-6 rounded-lg font-medium hover:bg-sand-dark transition-colors;
+  }
+  
+  .input {
+    @apply w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-forest/50 transition-colors;
+  }
+}

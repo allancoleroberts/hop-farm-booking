@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
 
+// Brand colors
+const colors = {
+  smoke: '#32322B',
+  dunesGrass: '#767460',
+  sand: '#B8A68A',
+  stone: '#E1D9CA'
+}
+
 // Simple router
 function useRoute() {
   const [path, setPath] = useState(window.location.pathname)
@@ -73,20 +81,31 @@ function BookingPage() {
     }
   }
 
-  if (!settings) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (!settings) return (
+    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: colors.stone}}>
+      <div className="text-center">
+        <div className="animate-pulse text-2xl" style={{color: colors.dunesGrass}}>Loading...</div>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-[#fffff8]">
-      <header className="py-8 px-4 text-center border-b border-stone-200">
-        <h1 className="text-4xl md:text-5xl text-[#4a5c4a] mb-2" style={{fontFamily: 'cursive'}}>Hop Farm Beach</h1>
-        <p className="text-stone-600">Forest. Beach. No WiFi.</p>
+    <div className="min-h-screen" style={{backgroundColor: colors.stone}}>
+      {/* Header */}
+      <header className="py-8 px-4">
+        <div className="max-w-5xl mx-auto">
+          <img src="/logo.png" alt="Hop Farm Beach" className="h-20 md:h-28 mx-auto" />
+        </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Calendar */}
           <div>
-            <h2 className="text-xl font-medium mb-6">Select your dates</h2>
+            <h2 className="font-dreamers text-2xl tracking-wider mb-6" style={{color: colors.smoke}}>
+              SELECT YOUR DATES
+            </h2>
             <Calendar 
               month={month} 
               setMonth={setMonth}
@@ -95,12 +114,12 @@ function BookingPage() {
               setRange={setRange}
             />
             {nights > 0 && (
-              <div className="mt-6 p-4 bg-stone-100 rounded-lg">
-                <div className="flex justify-between text-stone-700 mb-2">
+              <div className="mt-6 p-6 rounded-lg" style={{backgroundColor: 'white'}}>
+                <div className="flex justify-between mb-3" style={{color: colors.dunesGrass}}>
                   <span>{settings.nightlyRate.toLocaleString()} kr × {nights} night{nights > 1 ? 's' : ''}</span>
                   <span>{total.toLocaleString()} kr</span>
                 </div>
-                <div className="flex justify-between font-medium text-lg border-t border-stone-300 pt-2 mt-2">
+                <div className="flex justify-between font-medium text-lg pt-3" style={{borderTop: `1px solid ${colors.sand}`, color: colors.smoke}}>
                   <span>Total</span>
                   <span>{total.toLocaleString()} kr</span>
                 </div>
@@ -110,7 +129,9 @@ function BookingPage() {
 
           {/* Form */}
           <div>
-            <h2 className="text-xl font-medium mb-6">Your details</h2>
+            <h2 className="font-dreamers text-2xl tracking-wider mb-6" style={{color: colors.smoke}}>
+              YOUR DETAILS
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
@@ -118,7 +139,8 @@ function BookingPage() {
                 required
                 value={form.name}
                 onChange={e => setForm({...form, name: e.target.value})}
-                className="w-full px-4 py-3 border border-stone-300 rounded-lg"
+                className="w-full px-4 py-4 rounded-lg border-0 focus:ring-2 focus:ring-opacity-50 outline-none"
+                style={{backgroundColor: 'white', color: colors.smoke}}
               />
               <input
                 type="email"
@@ -126,39 +148,52 @@ function BookingPage() {
                 required
                 value={form.email}
                 onChange={e => setForm({...form, email: e.target.value})}
-                className="w-full px-4 py-3 border border-stone-300 rounded-lg"
+                className="w-full px-4 py-4 rounded-lg border-0 outline-none"
+                style={{backgroundColor: 'white', color: colors.smoke}}
               />
               <input
                 type="tel"
                 placeholder="Phone (optional)"
                 value={form.phone}
                 onChange={e => setForm({...form, phone: e.target.value})}
-                className="w-full px-4 py-3 border border-stone-300 rounded-lg"
+                className="w-full px-4 py-4 rounded-lg border-0 outline-none"
+                style={{backgroundColor: 'white', color: colors.smoke}}
               />
               <select
                 value={form.guests}
                 onChange={e => setForm({...form, guests: parseInt(e.target.value)})}
-                className="w-full px-4 py-3 border border-stone-300 rounded-lg"
+                className="w-full px-4 py-4 rounded-lg border-0 outline-none"
+                style={{backgroundColor: 'white', color: colors.smoke}}
               >
                 {[1,2,3,4].map(n => <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>)}
               </select>
               
-              {error && <div className="p-3 bg-red-50 text-red-700 rounded-lg">{error}</div>}
+              {error && (
+                <div className="p-4 rounded-lg text-red-700" style={{backgroundColor: '#fee2e2'}}>
+                  {error}
+                </div>
+              )}
               
               <button
                 type="submit"
                 disabled={nights === 0 || loading}
-                className="w-full py-4 rounded-lg font-medium text-white bg-[#4a5c4a] hover:bg-[#3a4a3a] disabled:bg-stone-300 disabled:cursor-not-allowed"
+                className="w-full py-4 rounded-lg font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{backgroundColor: nights === 0 || loading ? colors.sand : colors.smoke}}
               >
-                {loading ? 'Processing...' : nights === 0 ? 'Select dates first' : 'Continue to Payment'}
+                {loading ? 'Processing...' : nights === 0 ? 'Select dates to continue' : 'Continue to Payment'}
               </button>
             </form>
           </div>
         </div>
       </main>
 
-      <footer className="py-8 px-4 text-center text-stone-500 text-sm border-t border-stone-200">
-        <p>Hop Farm Beach · Humlegårdsstrand, Söderhamn, Sweden</p>
+      {/* Footer */}
+      <footer className="py-12 px-4 mt-12" style={{borderTop: `1px solid ${colors.sand}`}}>
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="font-dreamers tracking-widest text-sm" style={{color: colors.dunesGrass}}>
+            HUMLEGÅRDSSTRAND · SÖDERHAMN · SWEDEN
+          </p>
+        </div>
       </footer>
     </div>
   )
@@ -191,7 +226,6 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
       if (day <= range.from) {
         setRange({ from: day, to: null })
       } else {
-        // Check if range contains unavailable dates
         let d = new Date(range.from)
         while (d < day) {
           if (unavailableSet.has(d.toISOString().split('T')[0])) return
@@ -208,14 +242,34 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-stone-200 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} className="p-2 hover:bg-stone-100 rounded">←</button>
-        <span className="font-medium">{month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</span>
-        <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} className="p-2 hover:bg-stone-100 rounded">→</button>
+    <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
+      <div className="flex items-center justify-between mb-6">
+        <button 
+          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} 
+          className="p-2 rounded-full transition-colors"
+          style={{color: colors.smoke}}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="font-dreamers text-lg tracking-wider" style={{color: colors.smoke}}>
+          {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
+        </span>
+        <button 
+          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} 
+          className="p-2 rounded-full transition-colors"
+          style={{color: colors.smoke}}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-stone-500 mb-2">
-        {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <div key={d}>{d}</div>)}
+      <div className="grid grid-cols-7 gap-1 text-center text-xs mb-3" style={{color: colors.dunesGrass}}>
+        {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+          <div key={d} className="py-2 font-medium tracking-wide">{d}</div>
+        ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {getDays().map((day, i) => {
@@ -226,18 +280,38 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
           const isSelected = (range.from && day.getTime() === range.from.getTime()) || (range.to && day.getTime() === range.to.getTime())
           const inRange = isInRange(day)
           
+          let bgColor = 'transparent'
+          let textColor = colors.smoke
+          
+          if (isPast) {
+            textColor = colors.sand
+          } else if (isUnavail) {
+            bgColor = colors.stone
+            textColor = colors.sand
+          } else if (isSelected) {
+            bgColor = colors.smoke
+            textColor = 'white'
+          } else if (inRange) {
+            bgColor = colors.sand + '40'
+          }
+          
           return (
             <button
               key={i}
               onClick={() => handleClick(day)}
               disabled={isPast || isUnavail}
-              className={`aspect-square rounded-lg text-sm ${
-                isPast ? 'text-stone-300' :
-                isUnavail ? 'bg-stone-100 text-stone-400 line-through' :
-                isSelected ? 'bg-[#4a5c4a] text-white' :
-                inRange ? 'bg-[#4a5c4a]/10' :
-                'hover:bg-[#4a5c4a]/10'
-              }`}
+              className={`aspect-square rounded-lg text-sm font-medium transition-all duration-150 ${isUnavail ? 'line-through' : ''}`}
+              style={{ backgroundColor: bgColor, color: textColor }}
+              onMouseEnter={(e) => {
+                if (!isPast && !isUnavail && !isSelected && !inRange) {
+                  e.target.style.backgroundColor = colors.sand + '30'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isPast && !isUnavail && !isSelected && !inRange) {
+                  e.target.style.backgroundColor = 'transparent'
+                }
+              }}
             >
               {day.getDate()}
             </button>
@@ -268,41 +342,68 @@ function SuccessPage({ search }) {
   }, [search])
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: colors.stone}}>
       <div className="text-center">
-        <h1 className="text-2xl font-medium mb-4">Something went wrong</h1>
-        <p className="text-stone-600 mb-4">{error}</p>
-        <a href="/" className="text-[#4a5c4a] underline">Back to booking</a>
+        <h1 className="font-dreamers text-2xl tracking-wider mb-4" style={{color: colors.smoke}}>SOMETHING WENT WRONG</h1>
+        <p className="mb-6" style={{color: colors.dunesGrass}}>{error}</p>
+        <a href="/" className="underline" style={{color: colors.smoke}}>Back to booking</a>
       </div>
     </div>
   )
 
-  if (!booking) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (!booking) return (
+    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: colors.stone}}>
+      <div className="animate-pulse text-xl" style={{color: colors.dunesGrass}}>Loading...</div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-[#fffff8]">
-      <header className="py-8 px-4 text-center border-b border-stone-200">
-        <h1 className="text-4xl text-[#4a5c4a]" style={{fontFamily: 'cursive'}}>Hop Farm Beach</h1>
-      </header>
-      <main className="max-w-lg mx-auto px-4 py-12">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-4">✓</div>
-          <h2 className="text-2xl font-medium mb-2">Booking Confirmed</h2>
-          <p className="text-stone-600">Confirmation sent to {booking.guestEmail}</p>
+    <div className="min-h-screen" style={{backgroundColor: colors.stone}}>
+      <header className="py-8 px-4">
+        <div className="max-w-lg mx-auto">
+          <img src="/logo.png" alt="Hop Farm Beach" className="h-16 mx-auto" />
         </div>
-        <div className="bg-white rounded-xl border border-stone-200 p-6">
-          <div className="text-sm text-stone-500 mb-1">Booking Reference</div>
-          <div className="text-xl font-mono font-medium mb-4">{booking.bookingRef}</div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-stone-500">Guest</span><span>{booking.guestName}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Check-in</span><span>{booking.checkIn}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Check-out</span><span>{booking.checkOut}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">Nights</span><span>{booking.nights}</span></div>
-            <div className="flex justify-between border-t pt-2 mt-2 font-medium"><span>Total Paid</span><span>{booking.totalAmount.toLocaleString()} kr</span></div>
+      </header>
+      <main className="max-w-lg mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center" style={{backgroundColor: colors.dunesGrass}}>
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="font-dreamers text-3xl tracking-wider mb-3" style={{color: colors.smoke}}>BOOKING CONFIRMED</h2>
+          <p style={{color: colors.dunesGrass}}>Confirmation sent to {booking.guestEmail}</p>
+        </div>
+        <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
+          <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>BOOKING REFERENCE</div>
+          <div className="text-2xl font-mono font-medium mb-6" style={{color: colors.smoke}}>{booking.bookingRef}</div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span style={{color: colors.dunesGrass}}>Guest</span>
+              <span style={{color: colors.smoke}}>{booking.guestName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{color: colors.dunesGrass}}>Check-in</span>
+              <span style={{color: colors.smoke}}>{booking.checkIn}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{color: colors.dunesGrass}}>Check-out</span>
+              <span style={{color: colors.smoke}}>{booking.checkOut}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{color: colors.dunesGrass}}>Nights</span>
+              <span style={{color: colors.smoke}}>{booking.nights}</span>
+            </div>
+            <div className="flex justify-between pt-3 mt-3 font-medium" style={{borderTop: `1px solid ${colors.sand}`}}>
+              <span style={{color: colors.smoke}}>Total Paid</span>
+              <span style={{color: colors.smoke}}>{booking.totalAmount.toLocaleString()} kr</span>
+            </div>
           </div>
         </div>
         <div className="mt-8 text-center">
-          <a href="/" className="text-[#4a5c4a] underline">Back to Hop Farm Beach</a>
+          <a href="/" className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>
+            ← BACK TO HOP FARM BEACH
+          </a>
         </div>
       </main>
     </div>
@@ -353,18 +454,25 @@ function AdminPage() {
   }
 
   if (!authed) return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4">
-      <form onSubmit={login} className="bg-white rounded-xl p-8 w-full max-w-sm shadow-lg">
-        <h1 className="text-2xl text-center text-[#4a5c4a] mb-6" style={{fontFamily: 'cursive'}}>Hop Farm Beach</h1>
-        <h2 className="text-xl text-center mb-6">Admin Login</h2>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: colors.stone}}>
+      <form onSubmit={login} className="rounded-lg p-8 w-full max-w-sm" style={{backgroundColor: 'white'}}>
+        <img src="/logo.png" alt="Hop Farm Beach" className="h-16 mx-auto mb-8" />
+        <h2 className="font-dreamers text-xl tracking-wider text-center mb-6" style={{color: colors.smoke}}>ADMIN LOGIN</h2>
         <input
           type="password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full px-4 py-3 border border-stone-300 rounded-lg mb-4"
+          className="w-full px-4 py-3 rounded-lg mb-4 border-0 outline-none"
+          style={{backgroundColor: colors.stone, color: colors.smoke}}
         />
-        <button type="submit" className="w-full bg-[#4a5c4a] text-white py-3 rounded-lg">Login</button>
+        <button 
+          type="submit" 
+          className="w-full py-3 rounded-lg text-white font-medium"
+          style={{backgroundColor: colors.smoke}}
+        >
+          Login
+        </button>
       </form>
     </div>
   )
@@ -392,38 +500,76 @@ function AdminPage() {
   })
 
   return (
-    <div className="min-h-screen bg-stone-100">
-      <header className="bg-white border-b border-stone-200 px-4 py-4">
+    <div className="min-h-screen" style={{backgroundColor: colors.stone}}>
+      <header className="px-4 py-4" style={{backgroundColor: 'white', borderBottom: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl text-[#4a5c4a]" style={{fontFamily: 'cursive'}}>Hop Farm Beach</h1>
-          <span className="text-sm text-stone-500">Admin</span>
+          <img src="/logo.png" alt="Hop Farm Beach" className="h-10" />
+          <span className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>ADMIN</span>
         </div>
       </header>
-      <div className="bg-white border-b border-stone-200">
+      <div style={{backgroundColor: 'white', borderBottom: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto flex">
-          <button onClick={() => setTab('bookings')} className={`px-6 py-4 border-b-2 ${tab === 'bookings' ? 'border-[#4a5c4a] text-[#4a5c4a]' : 'border-transparent'}`}>Bookings</button>
-          <button onClick={() => setTab('calendar')} className={`px-6 py-4 border-b-2 ${tab === 'calendar' ? 'border-[#4a5c4a] text-[#4a5c4a]' : 'border-transparent'}`}>Calendar</button>
+          <button 
+            onClick={() => setTab('bookings')} 
+            className="px-6 py-4 font-medium"
+            style={{
+              borderBottom: tab === 'bookings' ? `2px solid ${colors.smoke}` : '2px solid transparent',
+              color: tab === 'bookings' ? colors.smoke : colors.dunesGrass
+            }}
+          >
+            Bookings
+          </button>
+          <button 
+            onClick={() => setTab('calendar')} 
+            className="px-6 py-4 font-medium"
+            style={{
+              borderBottom: tab === 'calendar' ? `2px solid ${colors.smoke}` : '2px solid transparent',
+              color: tab === 'calendar' ? colors.smoke : colors.dunesGrass
+            }}
+          >
+            Calendar
+          </button>
         </div>
       </div>
       <main className="max-w-5xl mx-auto p-4">
         {tab === 'bookings' && (
-          <div className="bg-white rounded-xl overflow-hidden">
+          <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
             <table className="w-full">
-              <thead className="bg-stone-50 text-left text-sm">
-                <tr>
-                  <th className="px-4 py-3">Ref</th>
-                  <th className="px-4 py-3">Guest</th>
-                  <th className="px-4 py-3">Dates</th>
-                  <th className="px-4 py-3">Status</th>
+              <thead style={{backgroundColor: colors.stone}}>
+                <tr className="text-left text-sm" style={{color: colors.dunesGrass}}>
+                  <th className="px-4 py-3 font-medium">Ref</th>
+                  <th className="px-4 py-3 font-medium">Guest</th>
+                  <th className="px-4 py-3 font-medium">Dates</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.map(b => (
-                  <tr key={b.id} className="border-t border-stone-100">
-                    <td className="px-4 py-3 font-mono">{b.booking_ref}</td>
-                    <td className="px-4 py-3">{b.guest_name}<br/><span className="text-sm text-stone-500">{b.guest_email}</span></td>
-                    <td className="px-4 py-3">{b.check_in} → {b.check_out}</td>
-                    <td className="px-4 py-3"><span className={`px-2 py-1 rounded text-xs ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{b.status}</span></td>
+                {bookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
+                      No bookings yet
+                    </td>
+                  </tr>
+                ) : bookings.map(b => (
+                  <tr key={b.id} style={{borderTop: `1px solid ${colors.stone}`}}>
+                    <td className="px-4 py-3 font-mono" style={{color: colors.smoke}}>{b.booking_ref}</td>
+                    <td className="px-4 py-3">
+                      <span style={{color: colors.smoke}}>{b.guest_name}</span>
+                      <br/>
+                      <span className="text-sm" style={{color: colors.dunesGrass}}>{b.guest_email}</span>
+                    </td>
+                    <td className="px-4 py-3" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
+                    <td className="px-4 py-3">
+                      <span 
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          backgroundColor: b.status === 'confirmed' ? colors.dunesGrass : colors.sand,
+                          color: 'white'
+                        }}
+                      >
+                        {b.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -431,14 +577,28 @@ function AdminPage() {
           </div>
         )}
         {tab === 'calendar' && (
-          <div className="bg-white rounded-xl p-6">
+          <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
             <div className="flex items-center justify-between mb-6">
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} className="px-3 py-1 border rounded">←</button>
-              <span className="font-medium">{month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</span>
-              <button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} className="px-3 py-1 border rounded">→</button>
+              <button 
+                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} 
+                className="px-3 py-1 rounded"
+                style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
+              >
+                ←
+              </button>
+              <span className="font-dreamers tracking-wider" style={{color: colors.smoke}}>
+                {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
+              </span>
+              <button 
+                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} 
+                className="px-3 py-1 rounded"
+                style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
+              >
+                →
+              </button>
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-sm text-stone-500 mb-2">
-              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <div key={d}>{d}</div>)}
+            <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3" style={{color: colors.dunesGrass}}>
+              {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <div key={d} className="py-2">{d}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1">
               {getDays().map((day, i) => {
@@ -448,28 +608,47 @@ function AdminPage() {
                 const isBooked = bookedDates.has(dateStr)
                 const isPast = day < new Date(new Date().setHours(0,0,0,0))
                 
+                let bgColor = '#ecfdf5'
+                let textColor = colors.dunesGrass
+                
+                if (isPast) {
+                  bgColor = colors.stone
+                  textColor = colors.sand
+                } else if (isBooked) {
+                  bgColor = colors.sand
+                  textColor = colors.smoke
+                } else if (isBlocked) {
+                  bgColor = '#fee2e2'
+                  textColor = '#991b1b'
+                }
+                
                 return (
                   <button
                     key={i}
                     onClick={() => !isPast && !isBooked && toggleBlock(dateStr)}
                     disabled={isPast || isBooked}
-                    className={`aspect-square rounded-lg text-sm ${
-                      isPast ? 'bg-stone-100 text-stone-400' :
-                      isBooked ? 'bg-blue-100 text-blue-700' :
-                      isBlocked ? 'bg-red-100 text-red-700' :
-                      'bg-green-50 text-green-700 hover:bg-green-100'
-                    }`}
+                    className="aspect-square rounded-lg text-sm font-medium"
+                    style={{backgroundColor: bgColor, color: textColor}}
                   >
                     {day.getDate()}
                   </button>
                 )
               })}
             </div>
-            <div className="mt-4 flex gap-4 text-sm">
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-50 border rounded" /> Available</div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-100 rounded" /> Blocked</div>
-              <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-100 rounded" /> Booked</div>
+            <div className="mt-6 flex gap-6 text-sm" style={{color: colors.dunesGrass}}>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{backgroundColor: '#ecfdf5'}} /> Available
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{backgroundColor: '#fee2e2'}} /> Blocked
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded" style={{backgroundColor: colors.sand}} /> Booked
+              </div>
             </div>
+            <p className="mt-4 text-sm" style={{color: colors.dunesGrass}}>
+              Click on available dates to block/unblock them.
+            </p>
           </div>
         )}
       </main>

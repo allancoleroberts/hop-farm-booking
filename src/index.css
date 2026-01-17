@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Dreamers';
+  src: url('/fonts/TheDreamersEditionRubberStamp.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/RoobertLight.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/RoobertRegular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/RoobertMedium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roobert';
+  src: url('/fonts/RoobertSemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --smoke: #32322B;
+  --dunes-grass: #767460;
+  --sand: #B8A68A;
+  --stone: #E1D9CA;
+}
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Roobert', system-ui, -apple-system, sans-serif;
+  background-color: var(--stone);
+  color: var(--smoke);
+}
+
+.font-dreamers {
+  font-family: 'Dreamers', cursive;
+  letter-spacing: 0.1em;
 }

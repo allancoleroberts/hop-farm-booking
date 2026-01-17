@@ -42,6 +42,7 @@ function BookingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [month, setMonth] = useState(new Date())
+  const [showCabinInfo, setShowCabinInfo] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(setSettings)
@@ -52,6 +53,9 @@ function BookingPage() {
     ? Math.ceil((range.to - range.from) / (1000 * 60 * 60 * 24)) 
     : 0
   const total = nights * (settings?.nightlyRate || 3495)
+
+  // Determine selection state
+  const selectionState = !range.from ? 'check-in' : !range.to ? 'check-out' : 'complete'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -81,6 +85,11 @@ function BookingPage() {
     }
   }
 
+  const formatDate = (date) => {
+    if (!date) return '—'
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
   if (!settings) return (
     <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: colors.stone}}>
       <div className="text-center">
@@ -98,21 +107,115 @@ function BookingPage() {
         </div>
       </header>
 
+      {/* Cabin Info Section */}
+      <section className="max-w-5xl mx-auto px-4 mb-8">
+        <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
+          <div className="md:flex">
+            <div className="md:w-2/5">
+              <img src="/cabin.jpg" alt="Hop Farm Beach Cabin" className="w-full h-64 md:h-full object-cover" />
+            </div>
+            <div className="md:w-3/5 p-6">
+              <h2 className="font-dreamers text-2xl tracking-wider mb-3" style={{color: colors.smoke}}>
+                ONE-BEDROOM CABIN
+              </h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-4" style={{color: colors.dunesGrass}}>
+                <span>👥 Sleeps 4</span>
+                <span>🛏 1 King bed + Sofa bed</span>
+                <span>🚿 1 Bathroom</span>
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['40m²', 'Non-smoking', 'Fireplace', 'Full kitchen', 'Rain shower', 'Marshall speakers', 'Private terraces', 'Floor-to-ceiling windows'].map(item => (
+                  <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+              
+              {showCabinInfo ? (
+                <div className="text-sm space-y-3" style={{color: colors.smoke}}>
+                  <p>Our eco-friendly cabins float above the land to leave the natural surroundings untouched. They provide a quiet retreat, a place to watch the seasons unfold like a painting through the floor-to-ceiling windows.</p>
+                  <p>The cabin measures around 40 square metres and includes a living room with fireplace, Marshall speakers, fully equipped kitchen, a king-sized bedroom, a bathroom with walk-in rain shower and high-quality amenities, as well as two private outdoor terraces.</p>
+                  <p>During your stay, enjoy complimentary access to our sauna, kayaks, and paddle boards.</p>
+                  <button 
+                    onClick={() => setShowCabinInfo(false)}
+                    className="underline mt-2"
+                    style={{color: colors.dunesGrass}}
+                  >
+                    Less info
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setShowCabinInfo(true)}
+                  className="text-sm underline"
+                  style={{color: colors.dunesGrass}}
+                >
+                  More info
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Calendar */}
           <div>
-            <h2 className="font-dreamers text-2xl tracking-wider mb-6" style={{color: colors.smoke}}>
+            <h2 className="font-dreamers text-2xl tracking-wider mb-4" style={{color: colors.smoke}}>
               SELECT YOUR DATES
             </h2>
+            
+            {/* Date Selection Status */}
+            <div className="flex gap-4 mb-6">
+              <div 
+                className="flex-1 p-4 rounded-lg transition-all"
+                style={{
+                  backgroundColor: selectionState === 'check-in' ? 'white' : colors.stone,
+                  border: selectionState === 'check-in' ? `2px solid ${colors.smoke}` : '2px solid transparent'
+                }}
+              >
+                <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
+                  {selectionState === 'check-in' ? '👉 SELECT CHECK-IN' : 'CHECK-IN'}
+                </div>
+                <div className="font-medium" style={{color: range.from ? colors.smoke : colors.sand}}>
+                  {formatDate(range.from)}
+                </div>
+              </div>
+              <div 
+                className="flex-1 p-4 rounded-lg transition-all"
+                style={{
+                  backgroundColor: selectionState === 'check-out' ? 'white' : colors.stone,
+                  border: selectionState === 'check-out' ? `2px solid ${colors.smoke}` : '2px solid transparent'
+                }}
+              >
+                <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
+                  {selectionState === 'check-out' ? '👉 SELECT CHECK-OUT' : 'CHECK-OUT'}
+                </div>
+                <div className="font-medium" style={{color: range.to ? colors.smoke : colors.sand}}>
+                  {formatDate(range.to)}
+                </div>
+              </div>
+            </div>
+
+            {selectionState !== 'complete' && (
+              <p className="text-sm mb-4" style={{color: colors.dunesGrass}}>
+                {selectionState === 'check-in' 
+                  ? 'Click on a date to select your arrival day'
+                  : 'Now click on a date to select your departure day'}
+              </p>
+            )}
+
             <Calendar 
               month={month} 
               setMonth={setMonth}
               unavailable={unavailable}
               range={range}
               setRange={setRange}
+              selectionState={selectionState}
             />
+
             {nights > 0 && (
               <div className="mt-6 p-6 rounded-lg" style={{backgroundColor: 'white'}}>
                 <div className="flex justify-between mb-3" style={{color: colors.dunesGrass}}>
@@ -124,6 +227,16 @@ function BookingPage() {
                   <span>{total.toLocaleString()} kr</span>
                 </div>
               </div>
+            )}
+
+            {range.from && (
+              <button 
+                onClick={() => setRange({ from: null, to: null })}
+                className="mt-4 text-sm underline"
+                style={{color: colors.dunesGrass}}
+              >
+                Clear dates
+              </button>
             )}
           </div>
 
@@ -139,7 +252,7 @@ function BookingPage() {
                 required
                 value={form.name}
                 onChange={e => setForm({...form, name: e.target.value})}
-                className="w-full px-4 py-4 rounded-lg border-0 focus:ring-2 focus:ring-opacity-50 outline-none"
+                className="w-full px-4 py-4 rounded-lg border-0 outline-none"
                 style={{backgroundColor: 'white', color: colors.smoke}}
               />
               <input
@@ -200,7 +313,7 @@ function BookingPage() {
 }
 
 // CALENDAR COMPONENT
-function Calendar({ month, setMonth, unavailable, range, setRange }) {
+function Calendar({ month, setMonth, unavailable, range, setRange, selectionState }) {
   const unavailableSet = new Set(unavailable)
   const today = new Date()
   today.setHours(0,0,0,0)
@@ -277,7 +390,9 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
           const dateStr = day.toISOString().split('T')[0]
           const isPast = day < today
           const isUnavail = unavailableSet.has(dateStr)
-          const isSelected = (range.from && day.getTime() === range.from.getTime()) || (range.to && day.getTime() === range.to.getTime())
+          const isCheckIn = range.from && day.getTime() === range.from.getTime()
+          const isCheckOut = range.to && day.getTime() === range.to.getTime()
+          const isSelected = isCheckIn || isCheckOut
           const inRange = isInRange(day)
           
           let bgColor = 'transparent'
@@ -288,8 +403,11 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
           } else if (isUnavail) {
             bgColor = colors.stone
             textColor = colors.sand
-          } else if (isSelected) {
+          } else if (isCheckIn) {
             bgColor = colors.smoke
+            textColor = 'white'
+          } else if (isCheckOut) {
+            bgColor = colors.dunesGrass
             textColor = 'white'
           } else if (inRange) {
             bgColor = colors.sand + '40'
@@ -317,6 +435,22 @@ function Calendar({ month, setMonth, unavailable, range, setRange }) {
             </button>
           )
         })}
+      </div>
+      
+      {/* Legend */}
+      <div className="mt-4 pt-4 flex gap-4 text-xs" style={{borderTop: `1px solid ${colors.stone}`, color: colors.dunesGrass}}>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded" style={{backgroundColor: colors.smoke}}></div>
+          <span>Check-in</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded" style={{backgroundColor: colors.dunesGrass}}></div>
+          <span>Check-out</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded" style={{backgroundColor: colors.stone}}></div>
+          <span>Unavailable</span>
+        </div>
       </div>
     </div>
   )

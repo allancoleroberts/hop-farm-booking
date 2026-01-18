@@ -8,6 +8,16 @@ const colors = {
   stone: '#E1D9CA'
 }
 
+// Gallery images - ending with floorplan
+const galleryImages = [
+  { src: '/gallery-1.jpg', alt: 'Cabin exterior at sunset' },
+  { src: '/gallery-5.jpg', alt: 'Cabin in winter snow' },
+  { src: '/gallery-2.jpg', alt: 'Kitchen interior' },
+  { src: '/gallery-3.jpg', alt: 'Bedroom with forest view' },
+  { src: '/gallery-4.jpg', alt: 'Bed and reading chair' },
+  { src: '/gallery-6.png', alt: 'Floor plan' }
+]
+
 // Simple router
 function useRoute() {
   const [path, setPath] = useState(window.location.pathname)
@@ -33,6 +43,190 @@ export default function App() {
   return <BookingPage />
 }
 
+// IMAGE GALLERY COMPONENT
+function ImageGallery() {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+
+  const goNext = (e) => {
+    e?.stopPropagation()
+    setCurrentIndex((prev) => (prev + 1) % galleryImages.length)
+  }
+
+  const goPrev = (e) => {
+    e?.stopPropagation()
+    setCurrentIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)
+  }
+
+  const openLightbox = () => setIsLightboxOpen(true)
+  const closeLightbox = () => setIsLightboxOpen(false)
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isLightboxOpen) return
+    const handleKey = (e) => {
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowRight') goNext()
+      if (e.key === 'ArrowLeft') goPrev()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [isLightboxOpen])
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isLightboxOpen])
+
+  return (
+    <>
+      {/* Main Gallery */}
+      <div 
+        className="relative cursor-pointer overflow-hidden rounded-t-lg md:rounded-l-lg md:rounded-tr-none h-64 md:h-80"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onClick={openLightbox}
+      >
+        <img 
+          src={galleryImages[currentIndex].src} 
+          alt={galleryImages[currentIndex].alt}
+          className="w-full h-full object-cover transition-transform duration-300"
+        />
+        
+        {/* Dots indicator */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+          {galleryImages.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx) }}
+              className="w-2 h-2 rounded-full transition-all"
+              style={{ 
+                backgroundColor: idx === currentIndex ? 'white' : 'rgba(255,255,255,0.5)',
+                transform: idx === currentIndex ? 'scale(1.2)' : 'scale(1)'
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Navigation arrows - show on hover */}
+        <div 
+          className="absolute inset-0 flex items-center justify-between px-3 transition-opacity duration-200"
+          style={{ opacity: isHovering ? 1 : 0 }}
+        >
+          <button
+            onClick={goPrev}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke={colors.smoke} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={goNext}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke={colors.smoke} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Click to expand hint */}
+        <div 
+          className="absolute top-3 right-3 px-2 py-1 rounded text-xs text-white transition-opacity duration-200"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: isHovering ? 1 : 0 }}
+        >
+          Click to expand
+        </div>
+
+        {/* Image count */}
+        <div 
+          className="absolute top-3 left-3 px-2 py-1 rounded text-xs text-white"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          {currentIndex + 1} / {galleryImages.length}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {isLightboxOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
+          onClick={closeLightbox}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors z-10"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Image counter */}
+          <div className="absolute top-4 left-4 text-white/70 text-sm">
+            {currentIndex + 1} / {galleryImages.length}
+          </div>
+
+          {/* Main image */}
+          <img
+            src={galleryImages[currentIndex].src}
+            alt={galleryImages[currentIndex].alt}
+            className="max-h-[85vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Navigation arrows */}
+          <button
+            onClick={goPrev}
+            className="absolute left-4 w-14 h-14 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={goNext}
+            className="absolute right-4 w-14 h-14 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Thumbnail strip */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {galleryImages.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx) }}
+                className="w-16 h-12 rounded overflow-hidden transition-all"
+                style={{ 
+                  opacity: idx === currentIndex ? 1 : 0.5,
+                  transform: idx === currentIndex ? 'scale(1.1)' : 'scale(1)',
+                  border: idx === currentIndex ? '2px solid white' : '2px solid transparent'
+                }}
+              >
+                <img src={img.src} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // BOOKING PAGE
 function BookingPage() {
   const [settings, setSettings] = useState(null)
@@ -54,7 +248,6 @@ function BookingPage() {
     : 0
   const total = nights * (settings?.nightlyRate || 3495)
 
-  // Determine selection state
   const selectionState = !range.from ? 'check-in' : !range.to ? 'check-out' : 'complete'
 
   const handleSubmit = async (e) => {
@@ -112,19 +305,22 @@ function BookingPage() {
         <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
           <div className="md:flex">
             <div className="md:w-2/5">
-              <img src="/cabin.jpg" alt="Hop Farm Beach Cabin" className="w-full h-64 md:h-full object-cover" />
+              <ImageGallery />
             </div>
             <div className="md:w-3/5 p-6">
-              <h2 className="font-dreamers text-2xl tracking-wider mb-3" style={{color: colors.smoke}}>
-                ONE-BEDROOM CABIN
+              <h2 className="font-dreamers text-2xl tracking-wider mb-2" style={{color: colors.smoke}}>
+                THE CABIN
               </h2>
+              <p className="text-sm mb-4" style={{color: colors.dunesGrass}}>
+                Sleeps four. No WiFi. Sauna included.
+              </p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-4" style={{color: colors.dunesGrass}}>
                 <span>👥 Sleeps 4</span>
-                <span>🛏 1 King bed + Sofa bed</span>
+                <span>🛏 2 double beds (160×200)</span>
                 <span>🚿 1 Bathroom</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {['40m²', 'Non-smoking', 'Fireplace', 'Full kitchen', 'Rain shower', 'Marshall speakers', 'Private terraces', 'Floor-to-ceiling windows'].map(item => (
+                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Full kitchen', 'Private deck'].map(item => (
                   <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
@@ -133,9 +329,11 @@ function BookingPage() {
               
               {showCabinInfo ? (
                 <div className="text-sm space-y-3" style={{color: colors.smoke}}>
-                  <p>Our eco-friendly cabins float above the land to leave the natural surroundings untouched. They provide a quiet retreat, a place to watch the seasons unfold like a painting through the floor-to-ceiling windows.</p>
-                  <p>The cabin measures around 40 square metres and includes a living room with fireplace, Marshall speakers, fully equipped kitchen, a king-sized bedroom, a bathroom with walk-in rain shower and high-quality amenities, as well as two private outdoor terraces.</p>
-                  <p>During your stay, enjoy complimentary access to our sauna, kayaks, and paddle boards.</p>
+                  <p>32 square metres. Two double beds. Floor-to-ceiling windows facing forest. Everything works, nothing extra.</p>
+                  <p>Designed by Danish architect Mette Fredskild. Built for people who want less stuff and more space to think.</p>
+                  <p><strong>What's included:</strong> Sliding door for private bedroom, heated floors throughout, air conditioning, towels & bed linen, radio with Bluetooth, board games, phone lockbox for digital detox.</p>
+                  <p><strong>Kitchen:</strong> Fully equipped with dishwasher, kettle, toaster, coffee maker. Fresh drinkable tap water.</p>
+                  <p><strong>Outside:</strong> Private deck, parking, and sauna ready when you are.</p>
                   <button 
                     onClick={() => setShowCabinInfo(false)}
                     className="underline mt-2"

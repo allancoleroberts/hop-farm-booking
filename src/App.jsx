@@ -8,8 +8,9 @@ const colors = {
   stone: '#E1D9CA'
 }
 
-// Gallery images - ending with floorplan
+// Gallery images - new forest image first, ending with floorplan
 const galleryImages = [
+  { src: '/gallery-0.webp', alt: 'Cabin nestled in Swedish forest' },
   { src: '/gallery-1.jpg', alt: 'Cabin exterior at sunset' },
   { src: '/gallery-5.jpg', alt: 'Cabin in winter snow' },
   { src: '/gallery-2.jpg', alt: 'Kitchen interior' },
@@ -227,6 +228,142 @@ function ImageGallery() {
   )
 }
 
+// RATE INFO MODAL COMPONENT
+function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${colors.stone}` }}>
+          <h2 className="font-dreamers text-xl tracking-wider" style={{ color: colors.smoke }}>
+            Digital Detox Cabin
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+            style={{ border: `1px solid ${colors.stone}` }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke={colors.smoke} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6">
+          {/* Cancellation Policy */}
+          <div className="flex items-center gap-2 mb-2">
+            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-green-600 font-medium">Free cancellation!</span>
+          </div>
+          <p className="text-sm mb-4" style={{ color: colors.dunesGrass }}>
+            Cancel up to 7 days before arrival for a full refund.
+          </p>
+
+          {/* Room Features */}
+          <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Room Features</h3>
+          <p className="text-sm mb-4" style={{ color: colors.dunesGrass }}>
+            Our eco-friendly cabin floats above the land to leave the natural surroundings untouched. 
+            A quiet retreat where you can watch the seasons unfold through floor-to-ceiling windows.
+          </p>
+
+          {/* Specs Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>👥</span>
+              <span><strong>Max occupancy:</strong> Sleeps 4</span>
+            </div>
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>🛏</span>
+              <span><strong>Beds:</strong> 2 Double (160×200)</span>
+            </div>
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>📐</span>
+              <span><strong>Room size:</strong> 32m²</span>
+            </div>
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>🚿</span>
+              <span><strong>Bathrooms:</strong> 1</span>
+            </div>
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>🚭</span>
+              <span><strong>Smoking:</strong> Non-smoking</span>
+            </div>
+            <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
+              <span>🐕</span>
+              <span><strong>Pets:</strong> Not allowed</span>
+            </div>
+          </div>
+
+          {/* Amenities */}
+          <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Amenities</h3>
+          <p className="text-sm mb-6" style={{ color: colors.dunesGrass }}>
+            Air conditioned, Heated floors, Linen & Towels provided, Electric sauna, 
+            Kitchenette with stovetop, Tea/Coffee maker, Bluetooth radio, Private deck, 
+            Phone lockbox for digital detox
+          </p>
+
+          {/* Key Info */}
+          <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Good to Know</h3>
+          <div className="space-y-2 text-sm mb-6" style={{ color: colors.dunesGrass }}>
+            <p><strong>No WiFi, No TV</strong> – That's the point. 5G cell service works if you need it.</p>
+            <p><strong>15 minutes from town</strong> – Stock up on food before arrival. No nearby shops.</p>
+            <p><strong>Private forest</strong> – No visible neighbours. Very quiet.</p>
+            <p><strong>Sauna</strong> – Electric sauna by the cabin. Takes 30 minutes to heat up.</p>
+            <p><strong>Parking</strong> – Private parking on property. One-minute walk to cabin.</p>
+          </div>
+
+          {/* Rate Breakdown */}
+          {nights > 0 && (
+            <div className="rounded-lg p-4" style={{ backgroundColor: colors.stone }}>
+              <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Rate Breakdown</h3>
+              <div className="flex justify-between mb-2 text-sm" style={{ color: colors.dunesGrass }}>
+                <span>{nightlyRate.toLocaleString()} kr × {nights} night{nights > 1 ? 's' : ''}</span>
+                <span>{total.toLocaleString()} kr</span>
+              </div>
+              <div className="text-xs mb-3" style={{ color: colors.dunesGrass }}>
+                Includes taxes + fees
+              </div>
+              <div className="flex justify-between font-medium pt-2" style={{ borderTop: `1px solid ${colors.sand}`, color: colors.smoke }}>
+                <span>Total for {nights} night{nights > 1 ? 's' : ''}</span>
+                <span>SEK {total.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // BOOKING PAGE
 function BookingPage() {
   const [settings, setSettings] = useState(null)
@@ -237,6 +374,7 @@ function BookingPage() {
   const [error, setError] = useState(null)
   const [month, setMonth] = useState(new Date())
   const [showCabinInfo, setShowCabinInfo] = useState(false)
+  const [showRateInfo, setShowRateInfo] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(setSettings)
@@ -320,7 +458,7 @@ function BookingPage() {
                 <span>🚿 1 Bathroom</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Full kitchen', 'Private deck'].map(item => (
+                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
                   <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
@@ -332,7 +470,7 @@ function BookingPage() {
                   <p>32 square metres. Two double beds. Floor-to-ceiling windows facing forest. Everything works, nothing extra.</p>
                   <p>Designed by Danish architect Mette Fredskild. Built for people who want less stuff and more space to think.</p>
                   <p><strong>What's included:</strong> Sliding door for private bedroom, heated floors throughout, air conditioning, towels & bed linen, radio with Bluetooth, board games, phone lockbox for digital detox.</p>
-                  <p><strong>Kitchen:</strong> Fully equipped with dishwasher, kettle, toaster, coffee maker. Fresh drinkable tap water.</p>
+                  <p><strong>Kitchenette:</strong> Electric stovetop, kettle, toaster, coffee maker. Fresh drinkable tap water.</p>
                   <p><strong>Outside:</strong> Private deck, parking, and sauna ready when you are.</p>
                   <button 
                     onClick={() => setShowCabinInfo(false)}
@@ -416,14 +554,27 @@ function BookingPage() {
 
             {nights > 0 && (
               <div className="mt-6 p-6 rounded-lg" style={{backgroundColor: 'white'}}>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-green-600 text-sm font-medium">Free cancellation</span>
+                </div>
                 <div className="flex justify-between mb-3" style={{color: colors.dunesGrass}}>
                   <span>{settings.nightlyRate.toLocaleString()} kr × {nights} night{nights > 1 ? 's' : ''}</span>
                   <span>{total.toLocaleString()} kr</span>
                 </div>
-                <div className="flex justify-between font-medium text-lg pt-3" style={{borderTop: `1px solid ${colors.sand}`, color: colors.smoke}}>
+                <div className="flex justify-between font-medium text-lg pt-3 mb-3" style={{borderTop: `1px solid ${colors.sand}`, color: colors.smoke}}>
                   <span>Total</span>
-                  <span>{total.toLocaleString()} kr</span>
+                  <span>SEK {total.toLocaleString()}</span>
                 </div>
+                <button 
+                  onClick={() => setShowRateInfo(true)}
+                  className="text-sm underline"
+                  style={{color: colors.dunesGrass}}
+                >
+                  More info
+                </button>
               </div>
             )}
 
@@ -501,11 +652,21 @@ function BookingPage() {
       {/* Footer */}
       <footer className="py-12 px-4 mt-12" style={{borderTop: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto text-center">
+          <img src="/stamp-logo.png" alt="Hop Farm Beach" className="h-20 mx-auto mb-6 opacity-80" />
           <p className="font-dreamers tracking-widest text-sm" style={{color: colors.dunesGrass}}>
-            HUMLEGÅRDSSTRAND · SÖDERHAMN · SWEDEN
+            SÖDERHAMN, SWEDEN · WAY UP NORTH AB
           </p>
         </div>
       </footer>
+
+      {/* Rate Info Modal */}
+      <RateInfoModal 
+        isOpen={showRateInfo}
+        onClose={() => setShowRateInfo(false)}
+        nights={nights}
+        nightlyRate={settings?.nightlyRate || 3495}
+        total={total}
+      />
     </div>
   )
 }

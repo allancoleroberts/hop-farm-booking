@@ -277,17 +277,6 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
         </div>
 
         <div className="p-6">
-          {/* Cancellation Policy */}
-          <div className="flex items-center gap-2 mb-2">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-green-600 font-medium">Free cancellation!</span>
-          </div>
-          <p className="text-sm mb-4" style={{ color: colors.dunesGrass }}>
-            Cancel up to 7 days before arrival for a full refund.
-          </p>
-
           {/* Room Features */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Room Features</h3>
           <p className="text-sm mb-4" style={{ color: colors.dunesGrass }}>
@@ -331,9 +320,9 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
             Phone lockbox for digital detox
           </p>
 
-          {/* Key Info */}
+          {/* Good to Know */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Good to Know</h3>
-          <div className="space-y-2 text-sm mb-6" style={{ color: colors.dunesGrass }}>
+          <div className="space-y-2 text-sm mb-4" style={{ color: colors.dunesGrass }}>
             <p><strong>No WiFi, No TV</strong> – That's the point. 5G cell service works if you need it.</p>
             <p><strong>15 minutes from town</strong> – Stock up on food before arrival. No nearby shops.</p>
             <p><strong>Private forest</strong> – No visible neighbours. Very quiet.</p>
@@ -341,19 +330,28 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
             <p><strong>Parking</strong> – Private parking on property. One-minute walk to cabin.</p>
           </div>
 
+          {/* Cancellation Policy - subtle section */}
+          <div className="text-sm mb-6 p-4 rounded-lg" style={{ backgroundColor: colors.stone }}>
+            <h4 className="font-medium mb-2" style={{ color: colors.smoke }}>Cancellation Policy</h4>
+            <p style={{ color: colors.dunesGrass }}>
+              Full refund if cancelled 28+ days before check-in. Date changes available 14-27 days prior. 
+              No changes within 14 days of arrival. <a href="https://hopfarmbeach.com/terms-conditions/" target="_blank" rel="noopener noreferrer" className="underline">Full terms</a>
+            </p>
+          </div>
+
           {/* Rate Breakdown */}
           {nights > 0 && (
-            <div className="rounded-lg p-4" style={{ backgroundColor: colors.stone }}>
+            <div className="rounded-lg p-4" style={{ backgroundColor: '#f8f7f5' }}>
               <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Rate Breakdown</h3>
-              <div className="flex justify-between mb-2 text-sm" style={{ color: colors.dunesGrass }}>
-                <span>{nightlyRate.toLocaleString()} kr × {nights} night{nights > 1 ? 's' : ''}</span>
-                <span>{total.toLocaleString()} kr</span>
+              <div className="flex justify-between mb-1 text-sm" style={{ color: colors.smoke }}>
+                <span>{nights} night{nights > 1 ? 's' : ''}</span>
+                <span>SEK {total.toLocaleString()}</span>
               </div>
               <div className="text-xs mb-3" style={{ color: colors.dunesGrass }}>
-                Includes taxes + fees
+                Includes 12% VAT
               </div>
               <div className="flex justify-between font-medium pt-2" style={{ borderTop: `1px solid ${colors.sand}`, color: colors.smoke }}>
-                <span>Total for {nights} night{nights > 1 ? 's' : ''}</span>
+                <span>Total</span>
                 <span>SEK {total.toLocaleString()}</span>
               </div>
             </div>
@@ -554,15 +552,12 @@ function BookingPage() {
 
             {nights > 0 && (
               <div className="mt-6 p-6 rounded-lg" style={{backgroundColor: 'white'}}>
-                <div className="flex items-center gap-2 mb-3">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-green-600 text-sm font-medium">Free cancellation</span>
+                <div className="flex justify-between mb-1" style={{color: colors.smoke}}>
+                  <span>{nights} night{nights > 1 ? 's' : ''}</span>
+                  <span>SEK {total.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between mb-3" style={{color: colors.dunesGrass}}>
-                  <span>{settings.nightlyRate.toLocaleString()} kr × {nights} night{nights > 1 ? 's' : ''}</span>
-                  <span>{total.toLocaleString()} kr</span>
+                <div className="text-xs mb-3" style={{color: colors.dunesGrass}}>
+                  Includes 12% VAT
                 </div>
                 <div className="flex justify-between font-medium text-lg pt-3 mb-3" style={{borderTop: `1px solid ${colors.sand}`, color: colors.smoke}}>
                   <span>Total</span>
@@ -653,9 +648,21 @@ function BookingPage() {
       <footer className="py-12 px-4 mt-12" style={{borderTop: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto text-center">
           <img src="/stamp-logo.png" alt="Hop Farm Beach" className="h-20 mx-auto mb-6 opacity-80" />
-          <p className="font-dreamers tracking-widest text-sm" style={{color: colors.dunesGrass}}>
+          <p className="font-dreamers tracking-widest text-sm mb-4" style={{color: colors.dunesGrass}}>
             SÖDERHAMN, SWEDEN · WAY UP NORTH AB
           </p>
+          <div className="flex items-center justify-center gap-4 text-xs" style={{color: colors.dunesGrass}}>
+            <a 
+              href="https://hopfarmbeach.com/terms-conditions/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              Terms & Conditions
+            </a>
+            <span>·</span>
+            <span>Copyright © 2026</span>
+          </div>
         </div>
       </footer>
 

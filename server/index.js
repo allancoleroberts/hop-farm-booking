@@ -103,15 +103,16 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     booking_ref TEXT NOT NULL UNIQUE,
     guest_name TEXT NOT NULL,
-    guest_email TEXT NOT NULL,
+    guest_email TEXT,
     guest_phone TEXT,
     check_in TEXT NOT NULL,
     check_out TEXT NOT NULL,
     nights INTEGER NOT NULL,
     guests INTEGER NOT NULL DEFAULT 2,
-    total_amount REAL NOT NULL,
+    total_amount REAL NOT NULL DEFAULT 0,
     currency TEXT NOT NULL DEFAULT 'SEK',
     stripe_session_id TEXT,
+    source TEXT NOT NULL DEFAULT 'direct',
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
@@ -127,7 +128,15 @@ db.exec(`
   INSERT OR IGNORE INTO settings (key, value) VALUES ('nightly_rate', '3495');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('min_nights', '1');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('max_guests', '4');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('ical_url', '');
 `);
+
+// Add source column if it doesn't exist (migration for existing db)
+try {
+  db.exec(`ALTER TABLE bookings ADD COLUMN source TEXT NOT NULL DEFAULT 'direct'`);
+} catch (e) {
+  // Column already exists
+}
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -380,9 +389,141 @@ app.post('/api/admin/cancel', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Manual booking creation (for Booking.com, Airbnb, etc.)
+app.post('/api/admin/booking', requireAuth, (req, res) => {
+  const { guestName, checkIn, checkOut, guests, source, notes } = req.body;
+  
+  if (!guestName || !checkIn || !checkOut) {
+    return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
+  }
+  
+  const cleanName = sanitize(guestName);
+  const cleanSource = sanitize(source) || 'manual';
+  const ref = generateRef();
+  
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+  
+  try {
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource);
+    
+    res.json({ success: true, booking_ref: ref });
+  } catch (err) {
+    console.error('Manual booking error:', err);
+    res.status(500).json({ error: 'Failed to create booking' });
+  }
+});
+
+// Get iCal URL
+app.get('/api/admin/ical', requireAuth, (req, res) => {
+  const url = getSetting('ical_url') || '';
+  res.json({ url });
+});
+
+// Set iCal URL
+app.post('/api/admin/ical', requireAuth, (req, res) => {
+  const { url } = req.body;
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('ical_url', url || '');
+  res.json({ success: true });
+});
+
+// Sync from Google Calendar iCal feed
+app.post('/api/admin/sync', requireAuth, async (req, res) => {
+  const icalUrl = getSetting('ical_url');
+  if (!icalUrl) {
+    return res.status(400).json({ error: 'No iCal URL configured' });
+  }
+  
+  try {
+    const response = await fetch(icalUrl);
+    if (!response.ok) throw new Error('Failed to fetch calendar');
+    
+    const icalData = await response.text();
+    const events = parseIcal(icalData);
+    
+    let synced = 0;
+    for (const event of events) {
+      // Check if this event is already in bookings (by date range and source)
+      const existing = db.prepare(
+        "SELECT id FROM bookings WHERE check_in = ? AND check_out = ? AND source = 'gcal'"
+      ).get(event.checkIn, event.checkOut);
+      
+      if (!existing) {
+        const ref = generateRef();
+        const nights = Math.ceil((new Date(event.checkOut) - new Date(event.checkIn)) / (1000 * 60 * 60 * 24));
+        
+        db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, status)
+          VALUES (?, ?, '', ?, ?, ?, 2, 0, 'gcal', 'confirmed')`).run(ref, event.summary || 'Calendar Block', event.checkIn, event.checkOut, nights);
+        synced++;
+      }
+    }
+    
+    res.json({ success: true, synced, total: events.length });
+  } catch (err) {
+    console.error('Calendar sync error:', err);
+    res.status(500).json({ error: 'Failed to sync calendar' });
+  }
+});
+
+// Simple iCal parser
+function parseIcal(data) {
+  const events = [];
+  const lines = data.split(/\r?\n/);
+  let inEvent = false;
+  let event = {};
+  
+  for (let line of lines) {
+    // Handle line continuation
+    if (line.startsWith(' ') || line.startsWith('\t')) {
+      continue;
+    }
+    
+    if (line === 'BEGIN:VEVENT') {
+      inEvent = true;
+      event = {};
+    } else if (line === 'END:VEVENT') {
+      if (event.checkIn && event.checkOut) {
+        events.push(event);
+      }
+      inEvent = false;
+    } else if (inEvent) {
+      if (line.startsWith('DTSTART')) {
+        const val = line.split(':')[1];
+        if (val) {
+          // Handle different date formats
+          if (val.length === 8) {
+            // YYYYMMDD format
+            event.checkIn = `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`;
+          } else if (val.includes('T')) {
+            // YYYYMMDDTHHMMSS format
+            const date = val.split('T')[0];
+            event.checkIn = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`;
+          }
+        }
+      } else if (line.startsWith('DTEND')) {
+        const val = line.split(':')[1];
+        if (val) {
+          if (val.length === 8) {
+            event.checkOut = `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`;
+          } else if (val.includes('T')) {
+            const date = val.split('T')[0];
+            event.checkOut = `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`;
+          }
+        }
+      } else if (line.startsWith('SUMMARY')) {
+        event.summary = line.split(':').slice(1).join(':');
+      }
+    }
+  }
+  
+  return events;
+}
+
 app.post('/api/admin/settings', requireAuth, (req, res) => {
   const { key, value } = req.body;
-  if (!key || !value) return res.status(400).json({ error: 'Key and value required' });
+  if (!key || value === undefined) return res.status(400).json({ error: 'Key and value required' });
   
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
   res.json({ success: true });

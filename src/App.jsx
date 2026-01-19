@@ -1051,6 +1051,10 @@ function AdminPage() {
   const [blocked, setBlocked] = useState([])
   const [tab, setTab] = useState('bookings')
   const [month, setMonth] = useState(new Date())
+  const [showAddBooking, setShowAddBooking] = useState(false)
+  const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '' })
+  const [icalUrl, setIcalUrl] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   const login = async (e) => {
     e.preventDefault()
@@ -1064,6 +1068,7 @@ function AdminPage() {
       setToken(data.token)
       setAuthed(true)
       loadData(data.token)
+      loadIcalUrl(data.token)
     } else {
       alert('Invalid password')
     }
@@ -1087,6 +1092,18 @@ function AdminPage() {
     }
   }
 
+  const loadIcalUrl = async (t) => {
+    try {
+      const res = await fetch('/api/admin/ical', { headers: authHeaders(t) })
+      if (res.ok) {
+        const data = await res.json()
+        setIcalUrl(data.url || '')
+      }
+    } catch (err) {
+      console.error('Load iCal URL error:', err)
+    }
+  }
+
   const toggleBlock = async (date) => {
     const isBlocked = blocked.includes(date)
     await fetch('/api/admin/block', {
@@ -1105,6 +1122,61 @@ function AdminPage() {
       body: JSON.stringify({ id })
     })
     loadData()
+  }
+
+  const createManualBooking = async (e) => {
+    e.preventDefault()
+    const res = await fetch('/api/admin/booking', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(newBooking)
+    })
+    if (res.ok) {
+      setShowAddBooking(false)
+      setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '' })
+      loadData()
+    } else {
+      const data = await res.json()
+      alert(data.error || 'Failed to create booking')
+    }
+  }
+
+  const saveIcalUrl = async () => {
+    await fetch('/api/admin/ical', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ url: icalUrl })
+    })
+    alert('iCal URL saved')
+  }
+
+  const syncCalendar = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/admin/sync', {
+        method: 'POST',
+        headers: authHeaders()
+      })
+      const data = await res.json()
+      if (res.ok) {
+        alert(`Synced ${data.synced} new events from calendar`)
+        loadData()
+      } else {
+        alert(data.error || 'Sync failed')
+      }
+    } catch (err) {
+      alert('Sync failed')
+    }
+    setSyncing(false)
+  }
+
+  const sourceColors = {
+    'direct': colors.dunesGrass,
+    'booking.com': '#003580',
+    'airbnb': '#FF5A5F',
+    'vrbo': '#3D67FF',
+    'gcal': '#4285F4',
+    'manual': colors.sand
   }
 
   if (!authed) return (
@@ -1187,10 +1259,124 @@ function AdminPage() {
           >
             Calendar
           </button>
+          <button 
+            onClick={() => setTab('settings')} 
+            className="px-6 py-4 font-medium"
+            style={{
+              borderBottom: tab === 'settings' ? `2px solid ${colors.smoke}` : '2px solid transparent',
+              color: tab === 'settings' ? colors.smoke : colors.dunesGrass
+            }}
+          >
+            Settings
+          </button>
         </div>
       </div>
       <main className="max-w-5xl mx-auto p-4">
         {tab === 'bookings' && (
+          <div>
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setShowAddBooking(true)}
+                className="px-4 py-2 rounded-lg text-white font-medium"
+                style={{backgroundColor: colors.smoke}}
+              >
+                + Add Booking
+              </button>
+            </div>
+            {showAddBooking && (
+              <div className="rounded-lg p-6 mb-4" style={{backgroundColor: 'white'}}>
+                <h3 className="font-medium mb-4" style={{color: colors.smoke}}>Add External Booking</h3>
+                <form onSubmit={createManualBooking} className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Guest Name</label>
+                    <input
+                      type="text"
+                      value={newBooking.guestName}
+                      onChange={e => setNewBooking({...newBooking, guestName: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Source</label>
+                    <select
+                      value={newBooking.source}
+                      onChange={e => setNewBooking({...newBooking, source: e.target.value})}
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    >
+                      <option value="booking.com">Booking.com</option>
+                      <option value="airbnb">Airbnb</option>
+                      <option value="vrbo">VRBO</option>
+                      <option value="manual">Manual / Phone</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Check-in</label>
+                    <input
+                      type="date"
+                      value={newBooking.checkIn}
+                      onChange={e => setNewBooking({...newBooking, checkIn: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Check-out</label>
+                    <input
+                      type="date"
+                      value={newBooking.checkOut}
+                      onChange={e => setNewBooking({...newBooking, checkOut: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Guests</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="4"
+                      value={newBooking.guests}
+                      onChange={e => setNewBooking({...newBooking, guests: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={newBooking.notes}
+                      onChange={e => setNewBooking({...newBooking, notes: e.target.value})}
+                      placeholder="Booking ID, email, etc."
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div className="col-span-2 flex gap-2">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded text-white font-medium"
+                      style={{backgroundColor: colors.dunesGrass}}
+                    >
+                      Save Booking
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddBooking(false)}
+                      className="px-4 py-2 rounded font-medium"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
             <table className="w-full">
               <thead style={{backgroundColor: colors.stone}}>
@@ -1198,6 +1384,7 @@ function AdminPage() {
                   <th className="px-4 py-3 font-medium">Ref</th>
                   <th className="px-4 py-3 font-medium">Guest</th>
                   <th className="px-4 py-3 font-medium">Dates</th>
+                  <th className="px-4 py-3 font-medium">Source</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
@@ -1205,19 +1392,29 @@ function AdminPage() {
               <tbody>
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
+                    <td colSpan={6} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
                       No bookings yet
                     </td>
                   </tr>
                 ) : bookings.map(b => (
                   <tr key={b.id} style={{borderTop: `1px solid ${colors.stone}`}}>
-                    <td className="px-4 py-3 font-mono" style={{color: colors.smoke}}>{b.booking_ref}</td>
+                    <td className="px-4 py-3 font-mono text-sm" style={{color: colors.smoke}}>{b.booking_ref}</td>
                     <td className="px-4 py-3">
                       <span style={{color: colors.smoke}}>{b.guest_name}</span>
-                      <br/>
-                      <span className="text-sm" style={{color: colors.dunesGrass}}>{b.guest_email}</span>
+                      {b.guest_email && <><br/><span className="text-sm" style={{color: colors.dunesGrass}}>{b.guest_email}</span></>}
                     </td>
-                    <td className="px-4 py-3" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
+                    <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
+                    <td className="px-4 py-3">
+                      <span 
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          backgroundColor: sourceColors[b.source] || colors.sand,
+                          color: 'white'
+                        }}
+                      >
+                        {b.source || 'direct'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span 
                         className="px-2 py-1 rounded text-xs font-medium"
@@ -1244,6 +1441,7 @@ function AdminPage() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
         {tab === 'calendar' && (
@@ -1318,6 +1516,42 @@ function AdminPage() {
             </div>
             <p className="mt-4 text-sm" style={{color: colors.dunesGrass}}>
               Click on available dates to block/unblock them.
+            </p>
+          </div>
+        )}
+        {tab === 'settings' && (
+          <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
+            <h3 className="font-medium mb-6" style={{color: colors.smoke}}>Google Calendar Sync</h3>
+            <p className="text-sm mb-4" style={{color: colors.dunesGrass}}>
+              Paste your Google Calendar iCal URL to automatically import bookings from other platforms (Booking.com, Airbnb, etc.) that sync to your calendar.
+            </p>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="url"
+                value={icalUrl}
+                onChange={e => setIcalUrl(e.target.value)}
+                placeholder="https://calendar.google.com/calendar/ical/..."
+                className="flex-1 px-4 py-2 rounded border-0"
+                style={{backgroundColor: colors.stone, color: colors.smoke}}
+              />
+              <button
+                onClick={saveIcalUrl}
+                className="px-4 py-2 rounded text-white font-medium"
+                style={{backgroundColor: colors.dunesGrass}}
+              >
+                Save
+              </button>
+            </div>
+            <button
+              onClick={syncCalendar}
+              disabled={syncing || !icalUrl}
+              className="px-4 py-2 rounded text-white font-medium disabled:opacity-50"
+              style={{backgroundColor: colors.smoke}}
+            >
+              {syncing ? 'Syncing...' : 'Sync Now'}
+            </button>
+            <p className="text-xs mt-4" style={{color: colors.dunesGrass}}>
+              To get your iCal URL: Google Calendar → Settings → [Your Calendar] → Integrate calendar → Secret address in iCal format
             </p>
           </div>
         )}

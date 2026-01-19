@@ -1052,9 +1052,39 @@ function AdminPage() {
   const [tab, setTab] = useState('bookings')
   const [month, setMonth] = useState(new Date())
   const [showAddBooking, setShowAddBooking] = useState(false)
-  const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '' })
+  const [editingBooking, setEditingBooking] = useState(null)
+  const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' })
   const [icalUrl, setIcalUrl] = useState('')
   const [syncing, setSyncing] = useState(false)
+
+  const countries = [
+    { code: '', name: 'Select country' },
+    { code: 'SE', name: '🇸🇪 Sweden' },
+    { code: 'NO', name: '🇳🇴 Norway' },
+    { code: 'DK', name: '🇩🇰 Denmark' },
+    { code: 'FI', name: '🇫🇮 Finland' },
+    { code: 'DE', name: '🇩🇪 Germany' },
+    { code: 'NL', name: '🇳🇱 Netherlands' },
+    { code: 'GB', name: '🇬🇧 United Kingdom' },
+    { code: 'US', name: '🇺🇸 United States' },
+    { code: 'CA', name: '🇨🇦 Canada' },
+    { code: 'FR', name: '🇫🇷 France' },
+    { code: 'ES', name: '🇪🇸 Spain' },
+    { code: 'IT', name: '🇮🇹 Italy' },
+    { code: 'CH', name: '🇨🇭 Switzerland' },
+    { code: 'AT', name: '🇦🇹 Austria' },
+    { code: 'BE', name: '🇧🇪 Belgium' },
+    { code: 'PL', name: '🇵🇱 Poland' },
+    { code: 'AU', name: '🇦🇺 Australia' },
+    { code: 'OTHER', name: '🌍 Other' },
+  ]
+
+  const countryFlags = {
+    'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'DE': '🇩🇪',
+    'NL': '🇳🇱', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'FR': '🇫🇷',
+    'ES': '🇪🇸', 'IT': '🇮🇹', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+    'PL': '🇵🇱', 'AU': '🇦🇺', 'OTHER': '🌍'
+  }
 
   const login = async (e) => {
     e.preventDefault()
@@ -1126,19 +1156,39 @@ function AdminPage() {
 
   const createManualBooking = async (e) => {
     e.preventDefault()
-    const res = await fetch('/api/admin/booking', {
-      method: 'POST',
+    const url = editingBooking 
+      ? `/api/admin/booking/${editingBooking.id}`
+      : '/api/admin/booking'
+    const method = editingBooking ? 'PUT' : 'POST'
+    
+    const res = await fetch(url, {
+      method,
       headers: authHeaders(),
       body: JSON.stringify(newBooking)
     })
     if (res.ok) {
       setShowAddBooking(false)
-      setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '' })
+      setEditingBooking(null)
+      setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' })
       loadData()
     } else {
       const data = await res.json()
-      alert(data.error || 'Failed to create booking')
+      alert(data.error || 'Failed to save booking')
     }
+  }
+
+  const startEditBooking = (booking) => {
+    setNewBooking({
+      guestName: booking.guest_name,
+      checkIn: booking.check_in,
+      checkOut: booking.check_out,
+      guests: booking.guests,
+      source: booking.source || 'manual',
+      notes: booking.guest_email || '',
+      country: booking.country || ''
+    })
+    setEditingBooking(booking)
+    setShowAddBooking(true)
   }
 
   const saveIcalUrl = async () => {
@@ -1175,6 +1225,8 @@ function AdminPage() {
     'booking.com': '#003580',
     'airbnb': '#FF5A5F',
     'vrbo': '#3D67FF',
+    'campanyon': '#2D5A27',
+    'admin': colors.smoke,
     'gcal': '#4285F4',
     'manual': colors.sand
   }
@@ -1285,7 +1337,7 @@ function AdminPage() {
             </div>
             {showAddBooking && (
               <div className="rounded-lg p-6 mb-4" style={{backgroundColor: 'white'}}>
-                <h3 className="font-medium mb-4" style={{color: colors.smoke}}>Add External Booking</h3>
+                <h3 className="font-medium mb-4" style={{color: colors.smoke}}>{editingBooking ? 'Edit Booking' : 'Add External Booking'}</h3>
                 <form onSubmit={createManualBooking} className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Guest Name</label>
@@ -1309,6 +1361,8 @@ function AdminPage() {
                       <option value="booking.com">Booking.com</option>
                       <option value="airbnb">Airbnb</option>
                       <option value="vrbo">VRBO</option>
+                      <option value="campanyon">Campanyon</option>
+                      <option value="admin">Admin Block</option>
                       <option value="manual">Manual / Phone</option>
                     </select>
                   </div>
@@ -1347,6 +1401,17 @@ function AdminPage() {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Country</label>
+                    <select
+                      value={newBooking.country}
+                      onChange={e => setNewBooking({...newBooking, country: e.target.value})}
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    >
+                      {countries.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
                     <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Notes (optional)</label>
                     <input
                       type="text"
@@ -1363,11 +1428,11 @@ function AdminPage() {
                       className="px-4 py-2 rounded text-white font-medium"
                       style={{backgroundColor: colors.dunesGrass}}
                     >
-                      Save Booking
+                      {editingBooking ? 'Update Booking' : 'Save Booking'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowAddBooking(false)}
+                      onClick={() => { setShowAddBooking(false); setEditingBooking(null); setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' }); }}
                       className="px-4 py-2 rounded font-medium"
                       style={{backgroundColor: colors.stone, color: colors.smoke}}
                     >
@@ -1385,6 +1450,7 @@ function AdminPage() {
                   <th className="px-4 py-3 font-medium">Guest</th>
                   <th className="px-4 py-3 font-medium">Dates</th>
                   <th className="px-4 py-3 font-medium">Source</th>
+                  <th className="px-4 py-3 font-medium">Country</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
@@ -1392,7 +1458,7 @@ function AdminPage() {
               <tbody>
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
+                    <td colSpan={7} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
                       No bookings yet
                     </td>
                   </tr>
@@ -1415,6 +1481,9 @@ function AdminPage() {
                         {b.source || 'direct'}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-xl" title={b.country}>
+                      {countryFlags[b.country] || ''}
+                    </td>
                     <td className="px-4 py-3">
                       <span 
                         className="px-2 py-1 rounded text-xs font-medium"
@@ -1426,15 +1495,24 @@ function AdminPage() {
                         {b.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 flex gap-2">
                       {b.status === 'confirmed' && (
-                        <button
-                          onClick={() => cancelBooking(b.id, b.booking_ref)}
-                          className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
-                          style={{backgroundColor: '#fee2e2', color: '#991b1b'}}
-                        >
-                          Cancel
-                        </button>
+                        <>
+                          <button
+                            onClick={() => startEditBooking(b)}
+                            className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                            style={{backgroundColor: colors.stone, color: colors.smoke}}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => cancelBooking(b.id, b.booking_ref)}
+                            className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                            style={{backgroundColor: '#fee2e2', color: '#991b1b'}}
+                          >
+                            Cancel
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>
@@ -1471,7 +1549,7 @@ function AdminPage() {
             <div className="grid grid-cols-7 gap-1">
               {getDays().map((day, i) => {
                 if (!day) return <div key={i} />
-                const dateStr = day.toISOString().split('T')[0]
+                const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
                 const isBlocked = blocked.includes(dateStr)
                 const isBooked = bookedDates.has(dateStr)
                 const isPast = day < new Date(new Date().setHours(0,0,0,0))

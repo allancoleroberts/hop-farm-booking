@@ -1085,6 +1085,16 @@ function AdminPage() {
     loadData()
   }
 
+  const cancelBooking = async (id, ref) => {
+    if (!confirm(`Cancel booking ${ref}? This will free up the dates.`)) return
+    await fetch('/api/admin/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+    loadData()
+  }
+
   if (!authed) return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{backgroundColor: colors.stone}}>
       <form onSubmit={login} className="rounded-lg p-8 w-full max-w-sm" style={{backgroundColor: 'white'}}>
@@ -1123,10 +1133,14 @@ function AdminPage() {
 
   const bookedDates = new Set()
   bookings.filter(b => b.status === 'confirmed').forEach(b => {
-    let d = new Date(b.check_in)
-    const end = new Date(b.check_out)
+    // Parse dates without timezone issues
+    const [inYear, inMonth, inDay] = b.check_in.split('-').map(Number)
+    const [outYear, outMonth, outDay] = b.check_out.split('-').map(Number)
+    let d = new Date(inYear, inMonth - 1, inDay)
+    const end = new Date(outYear, outMonth - 1, outDay)
     while (d < end) {
-      bookedDates.add(d.toISOString().split('T')[0])
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      bookedDates.add(dateStr)
       d.setDate(d.getDate() + 1)
     }
   })
@@ -1173,12 +1187,13 @@ function AdminPage() {
                   <th className="px-4 py-3 font-medium">Guest</th>
                   <th className="px-4 py-3 font-medium">Dates</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
+                    <td colSpan={5} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
                       No bookings yet
                     </td>
                   </tr>
@@ -1195,12 +1210,23 @@ function AdminPage() {
                       <span 
                         className="px-2 py-1 rounded text-xs font-medium"
                         style={{
-                          backgroundColor: b.status === 'confirmed' ? colors.dunesGrass : colors.sand,
+                          backgroundColor: b.status === 'confirmed' ? colors.dunesGrass : b.status === 'cancelled' ? '#991b1b' : colors.sand,
                           color: 'white'
                         }}
                       >
                         {b.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {b.status === 'confirmed' && (
+                        <button
+                          onClick={() => cancelBooking(b.id, b.booking_ref)}
+                          className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                          style={{backgroundColor: '#fee2e2', color: '#991b1b'}}
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

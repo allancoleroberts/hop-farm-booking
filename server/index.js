@@ -162,8 +162,9 @@ app.get('/api/confirm', async (req, res) => {
       if (resend) {
         try {
           await resend.emails.send({
-            from: 'Hop Farm Beach <booking@hopfarmbeach.com>',
+            from: 'Hop Farm Beach <info@hopfarmbeach.com>',
             to: booking.guest_email,
+            cc: 'info@hopfarmbeach.com',
             subject: `Booking Confirmed - ${booking.booking_ref}`,
             html: `
 <!DOCTYPE html>
@@ -177,10 +178,10 @@ app.get('/api/confirm', async (req, res) => {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;">
-          <!-- Header -->
+          <!-- Header with Logo -->
           <tr>
             <td style="background-color: #32322B; padding: 30px; text-align: center;">
-              <h1 style="color: #f3f1ed; margin: 0; font-size: 24px; font-weight: normal; letter-spacing: 2px;">HOP FARM BEACH</h1>
+              <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 80px; width: auto;" />
             </td>
           </tr>
           

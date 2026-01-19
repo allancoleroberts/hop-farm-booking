@@ -93,10 +93,13 @@ const apiLimiter = rateLimit({
 
 app.use('/api/', apiLimiter);
 
-// Database setup
-const dbPath = process.env.DATABASE_URL || './data/bookings.db';
+// Database setup - Railway volume is mounted at /data
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+const dbPath = process.env.DATABASE_URL || (isProduction ? '/data/bookings.db' : './data/bookings.db');
 const dbDir = dirname(dbPath);
 if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
+
+console.log(`Database path: ${dbPath}`);
 
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');

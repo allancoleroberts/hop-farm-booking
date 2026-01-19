@@ -1,25 +1,94 @@
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
+import sanitizeHtml from 'sanitize-html';
 import Stripe from 'stripe';
 import Database from 'better-sqlite3';
 import { Resend } from 'resend';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import crypto from 'crypto';
+
+// Config
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 // Resend setup
 const resend = process.env.RESEND_API_KEY 
   ? new Resend(process.env.RESEND_API_KEY) 
   : null;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 const app = express();
-app.use(cors());
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://hopfarmbeach.com"],
+      connectSrc: ["'self'", "https://api.stripe.com"],
+      frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com"],
+    }
+  }
+}));
+app.disable('x-powered-by');
+
+// CORS - restrict to allowed origins
+const allowedOrigins = [
+  'https://book.hopfarmbeach.com',
+  'https://hopfarmbeach.com',
+  SITE_URL
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
 app.use(compression());
 app.use(express.json());
+
+// Rate limiting
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const checkoutLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many booking attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many requests' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', apiLimiter);
 
 // Database setup
 const dbPath = process.env.DATABASE_URL || './data/bookings.db';
@@ -29,7 +98,6 @@ if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
-// Initialize tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,12 +129,10 @@ db.exec(`
   INSERT OR IGNORE INTO settings (key, value) VALUES ('max_guests', '4');
 `);
 
-// Stripe setup
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
   : null;
 
-// Helper functions
 function generateRef() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let ref = 'HFB-';
@@ -79,7 +145,61 @@ function getSetting(key) {
   return row ? row.value : null;
 }
 
-// API Routes
+function sanitize(str) {
+  if (!str) return '';
+  return sanitizeHtml(str, { allowedTags: [], allowedAttributes: {} }).trim();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isDateAvailable(checkIn, checkOut) {
+  const blocked = db.prepare('SELECT date FROM blocked_dates').all().map(r => r.date);
+  const bookings = db.prepare("SELECT check_in, check_out FROM bookings WHERE status = 'confirmed'").all();
+  
+  const unavailable = new Set(blocked);
+  for (const b of bookings) {
+    const [inY, inM, inD] = b.check_in.split('-').map(Number);
+    const [outY, outM, outD] = b.check_out.split('-').map(Number);
+    let d = new Date(inY, inM - 1, inD);
+    const end = new Date(outY, outM - 1, outD);
+    while (d < end) {
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      unavailable.add(dateStr);
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  
+  const [inY, inM, inD] = checkIn.split('-').map(Number);
+  const [outY, outM, outD] = checkOut.split('-').map(Number);
+  let d = new Date(inY, inM - 1, inD);
+  const end = new Date(outY, outM - 1, outD);
+  while (d < end) {
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (unavailable.has(dateStr)) return false;
+    d.setDate(d.getDate() + 1);
+  }
+  return true;
+}
+
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// Public API Routes
 app.get('/api/settings', (req, res) => {
   res.json({
     nightlyRate: parseInt(getSetting('nightly_rate') || '3495'),
@@ -95,22 +215,49 @@ app.get('/api/unavailable', (req, res) => {
   
   const unavailable = new Set(blocked);
   for (const b of bookings) {
-    let d = new Date(b.check_in);
-    const end = new Date(b.check_out);
+    const [inY, inM, inD] = b.check_in.split('-').map(Number);
+    const [outY, outM, outD] = b.check_out.split('-').map(Number);
+    let d = new Date(inY, inM - 1, inD);
+    const end = new Date(outY, outM - 1, outD);
     while (d < end) {
-      unavailable.add(d.toISOString().split('T')[0]);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      unavailable.add(dateStr);
       d.setDate(d.getDate() + 1);
     }
   }
   res.json([...unavailable]);
 });
 
-app.post('/api/checkout', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+app.post('/api/checkout', checkoutLimiter, async (req, res) => {
+  if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
   
   const { guestName, guestEmail, guestPhone, checkIn, checkOut, guests } = req.body;
+  
+  const errors = [];
+  const maxGuests = parseInt(getSetting('max_guests') || '4');
+  
+  const cleanName = sanitize(guestName);
+  const cleanEmail = sanitize(guestEmail);
+  const cleanPhone = sanitize(guestPhone);
+  
+  if (!cleanName || cleanName.length < 2) errors.push('Valid name is required');
+  if (!cleanEmail || !isValidEmail(cleanEmail)) errors.push('Valid email is required');
+  if (!guests || guests < 1 || guests > maxGuests) errors.push(`Guest count must be between 1 and ${maxGuests}`);
+  if (!checkIn || !checkOut) errors.push('Check-in and check-out dates are required');
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  
+  if (checkInDate < today) errors.push('Cannot book past dates');
+  if (checkOutDate <= checkInDate) errors.push('Check-out must be after check-in');
+  if (checkIn && checkOut && !isDateAvailable(checkIn, checkOut)) errors.push('Selected dates are not available');
+  
+  if (errors.length > 0) return res.status(400).json({ error: errors.join(', ') });
+  
   const rate = parseInt(getSetting('nightly_rate') || '3495');
-  const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
   const total = nights * rate;
   const ref = generateRef();
 
@@ -118,7 +265,7 @@ app.post('/api/checkout', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
-      customer_email: guestEmail,
+      customer_email: cleanEmail,
       line_items: [{
         price_data: {
           currency: 'sek',
@@ -131,26 +278,29 @@ app.post('/api/checkout', async (req, res) => {
         quantity: 1
       }],
       metadata: { booking_ref: ref },
-      success_url: `${process.env.SITE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.SITE_URL || 'http://localhost:3000'}?cancelled=true`
+      success_url: `${SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${SITE_URL}?cancelled=true`
     });
 
     db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`).run(ref, guestName, guestEmail, guestPhone || null, checkIn, checkOut, nights, guests, total, session.id);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id);
 
     res.json({ url: session.url });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Checkout error:', err.message);
+    res.status(500).json({ error: 'Unable to create checkout session' });
   }
 });
 
 app.get('/api/confirm', async (req, res) => {
-  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+  if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
   
   const { session_id } = req.query;
+  if (!session_id) return res.status(400).json({ error: 'Session ID required' });
+  
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status !== 'paid') return res.status(400).json({ error: 'Not paid' });
+    if (session.payment_status !== 'paid') return res.status(400).json({ error: 'Payment not completed' });
 
     const booking = db.prepare('SELECT * FROM bookings WHERE stripe_session_id = ?').get(session_id);
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
@@ -158,7 +308,6 @@ app.get('/api/confirm', async (req, res) => {
     if (booking.status === 'pending') {
       db.prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ?").run(booking.id);
       
-      // Send confirmation email
       if (resend) {
         try {
           await resend.emails.send({
@@ -166,107 +315,7 @@ app.get('/api/confirm', async (req, res) => {
             to: booking.guest_email,
             cc: 'info@hopfarmbeach.com',
             subject: `Booking Confirmed - ${booking.booking_ref}`,
-            html: `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;">
-          <!-- Header with Horizontal Logo on White -->
-          <tr>
-            <td style="background-color: #ffffff; padding: 30px; text-align: center;">
-              <a href="https://www.hopfarmbeach.com" target="_blank">
-                <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" />
-              </a>
-            </td>
-          </tr>
-          
-          <!-- Main Content -->
-          <tr>
-            <td style="padding: 20px 30px 40px;">
-              <h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2>
-              
-              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
-                Hi ${booking.guest_name.split(' ')[0]},
-              </p>
-              
-              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
-                Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.
-              </p>
-              
-              <!-- Booking Details Box -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;">
-                <tr>
-                  <td style="padding: 25px;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding-bottom: 12px;">
-                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br>
-                          <span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom: 12px;">
-                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br>
-                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom: 12px;">
-                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br>
-                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding-bottom: 12px;">
-                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br>
-                          <span style="color: #32322B; font-size: 16px;">${booking.guests}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br>
-                          <span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
-                We'll be in touch shortly with check-in details and directions to the cabin.
-              </p>
-              
-              <p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">
-                Questions? Just reply to this email or contact us at<br>
-                <a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> · +46 707314500
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Footer with Stamp Logo on Dark -->
-          <tr>
-            <td style="background-color: #32322B; padding: 30px; text-align: center;">
-              <a href="https://www.hopfarmbeach.com" target="_blank">
-                <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" />
-              </a>
-              <p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-            `
+            html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${booking.guest_name.split(' ')[0]},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br><span style="color: #32322B; font-size: 16px;">${booking.guests}</span></td></tr><tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr></table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We'll be in touch shortly with check-in details and directions to the cabin.</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> · +46 707314500</p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`
           });
         } catch (emailErr) {
           console.error('Email send error:', emailErr);
@@ -285,32 +334,36 @@ app.get('/api/confirm', async (req, res) => {
       totalAmount: booking.total_amount
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Confirm error:', err.message);
+    res.status(500).json({ error: 'Unable to confirm booking' });
   }
 });
 
 // Admin routes
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', loginLimiter, (req, res) => {
   const { password } = req.body;
-  if (password === (process.env.ADMIN_PASSWORD || 'admin123')) {
-    res.json({ success: true });
+  if (password === ADMIN_PASSWORD) {
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ success: true, token });
   } else {
     res.status(401).json({ error: 'Invalid password' });
   }
 });
 
-app.get('/api/admin/bookings', (req, res) => {
+app.get('/api/admin/bookings', requireAuth, (req, res) => {
   const bookings = db.prepare('SELECT * FROM bookings ORDER BY created_at DESC').all();
   res.json(bookings);
 });
 
-app.get('/api/admin/blocked', (req, res) => {
+app.get('/api/admin/blocked', requireAuth, (req, res) => {
   const blocked = db.prepare('SELECT date FROM blocked_dates').all().map(r => r.date);
   res.json(blocked);
 });
 
-app.post('/api/admin/block', (req, res) => {
+app.post('/api/admin/block', requireAuth, (req, res) => {
   const { date, block } = req.body;
+  if (!date) return res.status(400).json({ error: 'Date required' });
+  
   if (block) {
     db.prepare('INSERT OR IGNORE INTO blocked_dates (date) VALUES (?)').run(date);
   } else {
@@ -319,19 +372,22 @@ app.post('/api/admin/block', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/admin/cancel', (req, res) => {
+app.post('/api/admin/cancel', requireAuth, (req, res) => {
   const { id } = req.body;
+  if (!id) return res.status(400).json({ error: 'Booking ID required' });
+  
   db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?").run(id);
   res.json({ success: true });
 });
 
-app.post('/api/admin/settings', (req, res) => {
+app.post('/api/admin/settings', requireAuth, (req, res) => {
   const { key, value } = req.body;
+  if (!key || !value) return res.status(400).json({ error: 'Key and value required' });
+  
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
   res.json({ success: true });
 });
 
-// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, '../dist')));
   app.get('*', (req, res) => {

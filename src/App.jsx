@@ -19,6 +19,15 @@ const galleryImages = [
   { src: '/gallery-6.png', alt: 'Floor plan' }
 ]
 
+// Preload first image for faster initial display
+if (typeof window !== 'undefined') {
+  const link = document.createElement('link')
+  link.rel = 'preload'
+  link.as = 'image'
+  link.href = '/gallery-0.webp'
+  document.head.appendChild(link)
+}
+
 // Simple router
 function useRoute() {
   const [path, setPath] = useState(window.location.pathname)
@@ -97,6 +106,7 @@ function ImageGallery() {
         <img 
           src={galleryImages[currentIndex].src} 
           alt={galleryImages[currentIndex].alt}
+          loading={currentIndex === 0 ? 'eager' : 'lazy'}
           className="w-full h-full object-cover transition-transform duration-300"
         />
         
@@ -412,8 +422,8 @@ function BookingPage() {
           guestEmail: form.email,
           guestPhone: form.phone,
           guests: form.guests,
-          checkIn: range.from.toISOString().split('T')[0],
-          checkOut: range.to.toISOString().split('T')[0]
+          checkIn: `${range.from.getFullYear()}-${String(range.from.getMonth() + 1).padStart(2, '0')}-${String(range.from.getDate()).padStart(2, '0')}`,
+          checkOut: `${range.to.getFullYear()}-${String(range.to.getMonth() + 1).padStart(2, '0')}-${String(range.to.getDate()).padStart(2, '0')}`
         })
       })
       const data = await res.json()
@@ -816,6 +826,8 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
   const today = new Date()
   today.setHours(0,0,0,0)
 
+  const formatDateLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
   const getDays = () => {
     const year = month.getFullYear()
     const m = month.getMonth()
@@ -829,7 +841,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
   }
 
   const handleClick = (day) => {
-    if (!day || day < today || unavailableSet.has(day.toISOString().split('T')[0])) return
+    if (!day || day < today || unavailableSet.has(formatDateLocal(day))) return
     
     if (!range.from || (range.from && range.to)) {
       setRange({ from: day, to: null })
@@ -839,7 +851,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
       } else {
         let d = new Date(range.from)
         while (d < day) {
-          if (unavailableSet.has(d.toISOString().split('T')[0])) return
+          if (unavailableSet.has(formatDateLocal(d))) return
           d.setDate(d.getDate() + 1)
         }
         setRange({ ...range, to: day })
@@ -885,7 +897,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
       <div className="grid grid-cols-7 gap-1">
         {getDays().map((day, i) => {
           if (!day) return <div key={i} />
-          const dateStr = day.toISOString().split('T')[0]
+          const dateStr = formatDateLocal(day)
           const isPast = day < today
           const isUnavail = unavailableSet.has(dateStr)
           const isCheckIn = range.from && day.getTime() === range.from.getTime()
@@ -1057,6 +1069,17 @@ function AdminPage() {
   const [icalUrl, setIcalUrl] = useState('')
   const [syncing, setSyncing] = useState(false)
 
+  // Check for existing token on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('admin_token')
+    if (savedToken) {
+      setToken(savedToken)
+      setAuthed(true)
+      loadData(savedToken)
+      loadIcalUrl(savedToken)
+    }
+  }, [])
+
   const countries = [
     { code: '', name: 'Select country' },
     { code: 'SE', name: '🇸🇪 Sweden' },
@@ -1095,6 +1118,7 @@ function AdminPage() {
     })
     if (res.ok) {
       const data = await res.json()
+      localStorage.setItem('admin_token', data.token)
       setToken(data.token)
       setAuthed(true)
       loadData(data.token)
@@ -1102,6 +1126,12 @@ function AdminPage() {
     } else {
       alert('Invalid password')
     }
+  }
+
+  const logout = () => {
+    localStorage.removeItem('admin_token')
+    setToken('')
+    setAuthed(false)
   }
 
   const authHeaders = (t) => ({
@@ -1222,6 +1252,7 @@ function AdminPage() {
 
   const sourceColors = {
     'direct': colors.dunesGrass,
+    'website': '#059669',
     'booking.com': '#003580',
     'airbnb': '#FF5A5F',
     'vrbo': '#3D67FF',
@@ -1286,7 +1317,16 @@ function AdminPage() {
       <header className="px-4 py-4" style={{backgroundColor: 'white', borderBottom: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <img src="/logo.png" alt="Hop Farm Beach" className="h-10" />
-          <span className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>ADMIN</span>
+          <div className="flex items-center gap-4">
+            <span className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>ADMIN</span>
+            <button
+              onClick={logout}
+              className="text-xs px-3 py-1 rounded transition-opacity hover:opacity-70"
+              style={{backgroundColor: colors.stone, color: colors.smoke}}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
       <div style={{backgroundColor: 'white', borderBottom: `1px solid ${colors.sand}`}}>
@@ -1358,6 +1398,7 @@ function AdminPage() {
                       className="w-full px-3 py-2 rounded border-0"
                       style={{backgroundColor: colors.stone, color: colors.smoke}}
                     >
+                      <option value="website">Website</option>
                       <option value="booking.com">Booking.com</option>
                       <option value="airbnb">Airbnb</option>
                       <option value="vrbo">VRBO</option>

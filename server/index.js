@@ -63,6 +63,9 @@ app.use(cors({
 app.use(compression());
 app.use(express.json());
 
+// Trust proxy (for Railway)
+app.set('trust proxy', 1);
+
 // Rate limiting
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

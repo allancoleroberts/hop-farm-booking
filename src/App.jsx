@@ -441,48 +441,37 @@ function BookingPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{backgroundColor: colors.stone}}>
       {/* Header */}
-      <header className="py-4 px-4 md:px-8" style={{backgroundColor: colors.stone}}>
+      <header className="py-5 px-6 md:px-12" style={{backgroundColor: colors.stone}}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Left: Menu + My Account */}
-          <div className="flex items-center gap-4 md:gap-6">
-            <button 
-              onClick={() => setMenuOpen(true)}
-              className="flex items-center gap-2 text-sm font-medium tracking-wide transition-opacity hover:opacity-70"
-              style={{color: colors.smoke}}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <span className="hidden sm:inline">MENU</span>
-            </button>
-            <a 
-              href="https://hopfarmbeach.com/my-account/"
-              className="hidden md:flex items-center gap-2 text-sm font-medium tracking-wide transition-opacity hover:opacity-70"
-              style={{color: colors.smoke}}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              MY ACCOUNT
-            </a>
-          </div>
+          {/* Left: Menu only */}
+          <button 
+            onClick={() => setMenuOpen(true)}
+            className="flex items-center gap-3 text-xs font-medium tracking-widest transition-opacity hover:opacity-70 uppercase"
+            style={{color: colors.smoke}}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="hidden sm:inline">Menu</span>
+          </button>
 
           {/* Center: Logo */}
           <a href="https://hopfarmbeach.com/" className="absolute left-1/2 transform -translate-x-1/2">
-            <img src="/logo.png" alt="Hop Farm Beach" className="h-16 md:h-20" />
+            <img src="/logo.png" alt="Hop Farm Beach" className="h-14 md:h-16" />
           </a>
 
-          {/* Right: Book Your Stay (shown as active) */}
+          {/* Right: Book Your Stay (shown as current/active state) */}
           <div 
-            className="px-4 py-2 md:px-6 md:py-3 rounded-full text-sm font-medium tracking-wide flex items-center gap-2"
+            className="px-5 py-2.5 md:px-6 md:py-3 rounded-full text-xs font-medium tracking-wide flex items-center gap-2"
             style={{
-              border: `1.5px solid ${colors.smoke}`,
+              border: `1px solid ${colors.smoke}`,
               color: colors.smoke,
               backgroundColor: 'transparent'
             }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            {/* Calendar grid icon */}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h2v2H6V6zm4 0h2v2h-2V6zm4 0h2v2h-2V6zm-8 4h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z" />
             </svg>
             <span className="hidden sm:inline">Book Your Stay</span>
           </div>
@@ -497,7 +486,7 @@ function BookingPage() {
             className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16"
             style={{backgroundColor: colors.dunesGrass}}
           >
-            <nav className="space-y-2">
+            <nav className="space-y-1">
               {[
                 { name: 'Home', href: 'https://hopfarmbeach.com/' },
                 { name: 'Cabin', href: 'https://hopfarmbeach.com/cabin/' },
@@ -509,8 +498,8 @@ function BookingPage() {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="block text-3xl md:text-4xl lg:text-5xl font-medium transition-all hover:underline hover:translate-x-2"
-                  style={{color: '#f3f1ed', fontFamily: 'Roobert, sans-serif'}}
+                  className="block text-4xl md:text-5xl font-normal transition-all duration-300 hover:underline hover:translate-x-3"
+                  style={{color: '#f3f1ed', fontFamily: 'Roobert, sans-serif', lineHeight: '1.3'}}
                 >
                   {item.name}
                 </a>
@@ -530,8 +519,8 @@ function BookingPage() {
             className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center transition-opacity hover:opacity-70"
             style={{color: '#f3f1ed'}}
           >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -748,22 +737,22 @@ function BookingPage() {
       {/* Footer */}
       <footer className="mt-auto">
         {/* Main Footer */}
-        <div className="py-12 px-4 md:px-8" style={{backgroundColor: '#dfddd9'}}>
+        <div className="py-12 px-6 md:px-12" style={{backgroundColor: '#dfddd9'}}>
           <div className="max-w-6xl mx-auto">
             {/* Logo & Tagline */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-16">
               <img 
                 src="https://hopfarmbeach.com/wp-content/uploads/2025/03/hfb-logo.png" 
                 alt="Hop Farm Beach" 
-                className="h-12 mx-auto mb-3" 
+                className="h-10 mx-auto mb-4" 
               />
-              <p className="font-dreamers text-lg tracking-wide" style={{color: colors.smoke}}>
+              <p className="font-dreamers text-base tracking-widest uppercase" style={{color: colors.smoke}}>
                 Screens Off, Nature On
               </p>
             </div>
 
             {/* Three Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16 mb-10">
               {/* Left: Navigation */}
               <div className="text-center md:text-left space-y-2">
                 {[
@@ -775,7 +764,7 @@ function BookingPage() {
                   <a
                     key={item.name}
                     href={item.href}
-                    className="block text-lg font-medium transition-all hover:underline hover:translate-x-2"
+                    className="block text-xl font-medium transition-all duration-300 hover:underline hover:translate-x-2"
                     style={{color: colors.smoke}}
                   >
                     {item.name}
@@ -785,19 +774,9 @@ function BookingPage() {
 
               {/* Center: Contact */}
               <div className="text-center space-y-2">
-                <p className="text-lg font-bold" style={{color: colors.smoke}}>Contact</p>
-                <p className="text-base" style={{color: colors.smoke}}>info@hopfarmbeach.com</p>
-                <p className="text-base" style={{color: colors.smoke}}>+46 707314500</p>
-                <a 
-                  href="https://hopfarmbeach.com/cabin/"
-                  className="inline-flex items-center gap-2 mt-4 px-5 py-2 rounded text-sm font-medium transition-all hover:opacity-80"
-                  style={{backgroundColor: colors.smoke, color: '#f3f1ed'}}
-                >
-                  Book Your Stay
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </a>
+                <p className="text-xl font-bold mb-2" style={{color: colors.smoke}}>Contact</p>
+                <p className="text-lg" style={{color: colors.smoke}}>info@hopfarmbeach.com</p>
+                <p className="text-lg" style={{color: colors.smoke}}>+46 707314500</p>
               </div>
 
               {/* Right: Social */}
@@ -812,7 +791,7 @@ function BookingPage() {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block text-lg font-medium transition-all hover:underline md:hover:-translate-x-2"
+                    className="block text-xl font-medium transition-all duration-300 hover:underline md:hover:-translate-x-2"
                     style={{color: colors.smoke}}
                   >
                     {item.name}
@@ -824,9 +803,8 @@ function BookingPage() {
             {/* Divider */}
             <div className="border-t mb-4" style={{borderColor: '#75735f63'}} />
 
-            {/* Bottom Links */}
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm" style={{color: colors.smoke}}>
-              <a href="https://hopfarmbeach.com/my-account/" className="hover:underline">My Account</a>
+            {/* Bottom Links - left aligned like main site */}
+            <div className="flex flex-wrap justify-start gap-x-4 gap-y-2 text-sm" style={{color: colors.smoke}}>
               <a href="https://hopfarmbeach.com/cabin/faq/" className="hover:underline">FAQ</a>
               <a href="https://hopfarmbeach.com/privacy-policy/" className="hover:underline">Privacy Policy</a>
               <a href="https://hopfarmbeach.com/imprint/" className="hover:underline">Imprint</a>

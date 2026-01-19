@@ -3,9 +3,15 @@ import cors from 'cors';
 import compression from 'compression';
 import Stripe from 'stripe';
 import Database from 'better-sqlite3';
+import { Resend } from 'resend';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
+
+// Resend setup
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -151,6 +157,118 @@ app.get('/api/confirm', async (req, res) => {
 
     if (booking.status === 'pending') {
       db.prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ?").run(booking.id);
+      
+      // Send confirmation email
+      if (resend) {
+        try {
+          await resend.emails.send({
+            from: 'Hop Farm Beach <booking@hopfarmbeach.com>',
+            to: booking.guest_email,
+            subject: `Booking Confirmed - ${booking.booking_ref}`,
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #32322B; padding: 30px; text-align: center;">
+              <h1 style="color: #f3f1ed; margin: 0; font-size: 24px; font-weight: normal; letter-spacing: 2px;">HOP FARM BEACH</h1>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2>
+              
+              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+                Hi ${booking.guest_name.split(' ')[0]},
+              </p>
+              
+              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+                Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.
+              </p>
+              
+              <!-- Booking Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding-bottom: 12px;">
+                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br>
+                          <span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom: 12px;">
+                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br>
+                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom: 12px;">
+                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br>
+                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding-bottom: 12px;">
+                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br>
+                          <span style="color: #32322B; font-size: 16px;">${booking.guests}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br>
+                          <span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+                We'll be in touch shortly with check-in details and directions to the cabin.
+              </p>
+              
+              <p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">
+                Questions? Just reply to this email or contact us at<br>
+                <a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> · +46 707314500
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #767460; padding: 25px; text-align: center;">
+              <p style="color: #f3f1ed; margin: 0; font-size: 12px; letter-spacing: 1px;">SCREENS OFF, NATURE ON</p>
+              <p style="color: #f3f1ed; margin: 10px 0 0; font-size: 12px;">
+                <a href="https://hopfarmbeach.com" style="color: #f3f1ed; text-decoration: none;">hopfarmbeach.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+            `
+          });
+        } catch (emailErr) {
+          console.error('Email send error:', emailErr);
+        }
+      }
     }
 
     res.json({

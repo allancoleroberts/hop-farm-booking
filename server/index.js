@@ -178,16 +178,18 @@ app.get('/api/confirm', async (req, res) => {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;">
-          <!-- Header with Logo -->
+          <!-- Header with Horizontal Logo on White -->
           <tr>
-            <td style="background-color: #32322B; padding: 30px; text-align: center;">
-              <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 80px; width: auto;" />
+            <td style="background-color: #ffffff; padding: 30px; text-align: center;">
+              <a href="https://www.hopfarmbeach.com" target="_blank">
+                <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" />
+              </a>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 40px 30px;">
+            <td style="padding: 20px 30px 40px;">
               <h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2>
               
               <p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
@@ -212,13 +214,13 @@ app.get('/api/confirm', async (req, res) => {
                       <tr>
                         <td style="padding-bottom: 12px;">
                           <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br>
-                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding-bottom: 12px;">
                           <span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br>
-                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                          <span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </td>
                       </tr>
                       <tr>
@@ -249,13 +251,13 @@ app.get('/api/confirm', async (req, res) => {
             </td>
           </tr>
           
-          <!-- Footer -->
+          <!-- Footer with Stamp Logo on Dark -->
           <tr>
-            <td style="background-color: #767460; padding: 25px; text-align: center;">
-              <p style="color: #f3f1ed; margin: 0; font-size: 12px; letter-spacing: 1px;">SCREENS OFF, NATURE ON</p>
-              <p style="color: #f3f1ed; margin: 10px 0 0; font-size: 12px;">
-                <a href="https://hopfarmbeach.com" style="color: #f3f1ed; text-decoration: none;">hopfarmbeach.com</a>
-              </p>
+            <td style="background-color: #32322B; padding: 30px; text-align: center;">
+              <a href="https://www.hopfarmbeach.com" target="_blank">
+                <img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" />
+              </a>
+              <p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p>
             </td>
           </tr>
         </table>
@@ -314,6 +316,12 @@ app.post('/api/admin/block', (req, res) => {
   } else {
     db.prepare('DELETE FROM blocked_dates WHERE date = ?').run(date);
   }
+  res.json({ success: true });
+});
+
+app.post('/api/admin/cancel', (req, res) => {
+  const { id } = req.body;
+  db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?").run(id);
   res.json({ success: true });
 });
 

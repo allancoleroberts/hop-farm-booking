@@ -442,8 +442,8 @@ function BookingPage() {
     <div className="min-h-screen flex flex-col" style={{backgroundColor: colors.stone}}>
       {/* Header */}
       <header className="py-5 px-6 md:px-12" style={{backgroundColor: colors.stone}}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Left: Menu only */}
+        <div className="max-w-7xl mx-auto">
+          {/* Menu only */}
           <button 
             onClick={() => setMenuOpen(true)}
             className="flex items-center gap-3 text-xs font-medium tracking-widest transition-opacity hover:opacity-70 uppercase"
@@ -454,27 +454,6 @@ function BookingPage() {
             </svg>
             <span className="hidden sm:inline">Menu</span>
           </button>
-
-          {/* Center: Logo */}
-          <a href="https://hopfarmbeach.com/" className="absolute left-1/2 transform -translate-x-1/2">
-            <img src="/logo.png" alt="Hop Farm Beach" className="h-14 md:h-16" />
-          </a>
-
-          {/* Right: Book Your Stay (shown as current/active state) */}
-          <div 
-            className="px-5 py-2.5 md:px-6 md:py-3 rounded-full text-xs font-medium tracking-wide flex items-center gap-2"
-            style={{
-              border: `1px solid ${colors.smoke}`,
-              color: colors.smoke,
-              backgroundColor: 'transparent'
-            }}
-          >
-            {/* Calendar grid icon */}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h2v2H6V6zm4 0h2v2h-2V6zm4 0h2v2h-2V6zm-8 4h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h2v2H6v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z" />
-            </svg>
-            <span className="hidden sm:inline">Book Your Stay</span>
-          </div>
         </div>
       </header>
 

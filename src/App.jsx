@@ -1045,6 +1045,7 @@ function SuccessPage({ search }) {
 // ADMIN PAGE
 function AdminPage() {
   const [authed, setAuthed] = useState(false)
+  const [token, setToken] = useState('')
   const [password, setPassword] = useState('')
   const [bookings, setBookings] = useState([])
   const [blocked, setBlocked] = useState([])
@@ -1059,27 +1060,38 @@ function AdminPage() {
       body: JSON.stringify({ password })
     })
     if (res.ok) {
+      const data = await res.json()
+      setToken(data.token)
       setAuthed(true)
-      loadData()
+      loadData(data.token)
     } else {
       alert('Invalid password')
     }
   }
 
-  const loadData = async () => {
-    const [b, bl] = await Promise.all([
-      fetch('/api/admin/bookings').then(r => r.json()),
-      fetch('/api/admin/blocked').then(r => r.json())
-    ])
-    setBookings(b)
-    setBlocked(bl)
+  const authHeaders = (t) => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${t || token}`
+  })
+
+  const loadData = async (t) => {
+    try {
+      const [b, bl] = await Promise.all([
+        fetch('/api/admin/bookings', { headers: authHeaders(t) }).then(r => r.ok ? r.json() : []),
+        fetch('/api/admin/blocked', { headers: authHeaders(t) }).then(r => r.ok ? r.json() : [])
+      ])
+      setBookings(b)
+      setBlocked(bl)
+    } catch (err) {
+      console.error('Load data error:', err)
+    }
   }
 
   const toggleBlock = async (date) => {
     const isBlocked = blocked.includes(date)
     await fetch('/api/admin/block', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ date, block: !isBlocked })
     })
     loadData()
@@ -1089,7 +1101,7 @@ function AdminPage() {
     if (!confirm(`Cancel booking ${ref}? This will free up the dates.`)) return
     await fetch('/api/admin/cancel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ id })
     })
     loadData()

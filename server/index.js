@@ -296,8 +296,8 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
       cancel_url: `${SITE_URL}?cancelled=true`
     });
 
-    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id);
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending')`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id);
 
     res.json({ url: session.url });
   } catch (err) {

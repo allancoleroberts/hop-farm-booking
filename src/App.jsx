@@ -373,11 +373,22 @@ function BookingPage() {
   const [month, setMonth] = useState(new Date())
   const [showCabinInfo, setShowCabinInfo] = useState(false)
   const [showRateInfo, setShowRateInfo] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(setSettings)
     fetch('/api/unavailable').then(r => r.json()).then(setUnavailable)
   }, [])
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [menuOpen])
 
   const nights = range.from && range.to 
     ? Math.ceil((range.to - range.from) / (1000 * 60 * 60 * 24)) 
@@ -428,13 +439,103 @@ function BookingPage() {
   )
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: colors.stone}}>
+    <div className="min-h-screen flex flex-col" style={{backgroundColor: colors.stone}}>
       {/* Header */}
-      <header className="py-8 px-4">
-        <div className="max-w-5xl mx-auto">
-          <img src="/logo.png" alt="Hop Farm Beach" className="h-20 md:h-28 mx-auto" />
+      <header className="py-4 px-4 md:px-8" style={{backgroundColor: colors.stone}}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Left: Menu + My Account */}
+          <div className="flex items-center gap-4 md:gap-6">
+            <button 
+              onClick={() => setMenuOpen(true)}
+              className="flex items-center gap-2 text-sm font-medium tracking-wide transition-opacity hover:opacity-70"
+              style={{color: colors.smoke}}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span className="hidden sm:inline">MENU</span>
+            </button>
+            <a 
+              href="https://hopfarmbeach.com/my-account/"
+              className="hidden md:flex items-center gap-2 text-sm font-medium tracking-wide transition-opacity hover:opacity-70"
+              style={{color: colors.smoke}}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              MY ACCOUNT
+            </a>
+          </div>
+
+          {/* Center: Logo */}
+          <a href="https://hopfarmbeach.com/" className="absolute left-1/2 transform -translate-x-1/2">
+            <img src="/logo.png" alt="Hop Farm Beach" className="h-16 md:h-20" />
+          </a>
+
+          {/* Right: Book Your Stay (shown as active) */}
+          <div 
+            className="px-4 py-2 md:px-6 md:py-3 rounded-full text-sm font-medium tracking-wide flex items-center gap-2"
+            style={{
+              border: `1.5px solid ${colors.smoke}`,
+              color: colors.smoke,
+              backgroundColor: 'transparent'
+            }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="hidden sm:inline">Book Your Stay</span>
+          </div>
         </div>
       </header>
+
+      {/* Mobile Menu Overlay */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Menu Content */}
+          <div 
+            className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16"
+            style={{backgroundColor: colors.dunesGrass}}
+          >
+            <nav className="space-y-2">
+              {[
+                { name: 'Home', href: 'https://hopfarmbeach.com/' },
+                { name: 'Cabin', href: 'https://hopfarmbeach.com/cabin/' },
+                { name: 'History', href: 'https://hopfarmbeach.com/history/' },
+                { name: 'Gallery', href: 'https://hopfarmbeach.com/gallery/' },
+                { name: 'Sustainability', href: 'https://hopfarmbeach.com/sustainability/' },
+                { name: 'Contact', href: 'https://hopfarmbeach.com/contact/' }
+              ].map(item => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="block text-3xl md:text-4xl lg:text-5xl font-medium transition-all hover:underline hover:translate-x-2"
+                  style={{color: '#f3f1ed', fontFamily: 'Roobert, sans-serif'}}
+                >
+                  {item.name}
+                </a>
+              ))}
+            </nav>
+          </div>
+
+          {/* Image Side (hidden on mobile) */}
+          <div 
+            className="hidden md:block w-1/2 h-full bg-cover bg-center"
+            style={{backgroundImage: 'url(https://hopfarmbeach.com/wp-content/uploads/2025/02/Hop-Farm-Beach-Cabin-Rental-Sweden-00033.jpg)'}}
+          />
+
+          {/* Close Button */}
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{color: '#f3f1ed'}}
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Cabin Info Section */}
       <section className="max-w-5xl mx-auto px-4 mb-8">
@@ -645,24 +746,98 @@ function BookingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-12 px-4 mt-12" style={{borderTop: `1px solid ${colors.sand}`}}>
-        <div className="max-w-5xl mx-auto text-center">
-          <img src="/stamp-logo.png" alt="Hop Farm Beach" className="h-20 mx-auto mb-6 opacity-80" />
-          <p className="font-dreamers tracking-widest text-sm mb-4" style={{color: colors.dunesGrass}}>
-            SÖDERHAMN, SWEDEN · WAY UP NORTH AB
-          </p>
-          <div className="flex items-center justify-center gap-4 text-xs" style={{color: colors.dunesGrass}}>
-            <a 
-              href="https://hopfarmbeach.com/terms-conditions/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
-              Terms & Conditions
-            </a>
-            <span>·</span>
-            <span>Copyright © 2026</span>
+      <footer className="mt-auto">
+        {/* Main Footer */}
+        <div className="py-12 px-4 md:px-8" style={{backgroundColor: '#dfddd9'}}>
+          <div className="max-w-6xl mx-auto">
+            {/* Logo & Tagline */}
+            <div className="text-center mb-12">
+              <img 
+                src="https://hopfarmbeach.com/wp-content/uploads/2025/03/hfb-logo.png" 
+                alt="Hop Farm Beach" 
+                className="h-12 mx-auto mb-3" 
+              />
+              <p className="font-dreamers text-lg tracking-wide" style={{color: colors.smoke}}>
+                Screens Off, Nature On
+              </p>
+            </div>
+
+            {/* Three Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mb-8">
+              {/* Left: Navigation */}
+              <div className="text-center md:text-left space-y-2">
+                {[
+                  { name: 'Cabin', href: 'https://hopfarmbeach.com/cabin/' },
+                  { name: 'History', href: 'https://hopfarmbeach.com/history/' },
+                  { name: 'Gallery', href: 'https://hopfarmbeach.com/gallery/' },
+                  { name: 'Sustainability', href: 'https://hopfarmbeach.com/sustainability/' }
+                ].map(item => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="block text-lg font-medium transition-all hover:underline hover:translate-x-2"
+                    style={{color: colors.smoke}}
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+
+              {/* Center: Contact */}
+              <div className="text-center space-y-2">
+                <p className="text-lg font-bold" style={{color: colors.smoke}}>Contact</p>
+                <p className="text-base" style={{color: colors.smoke}}>info@hopfarmbeach.com</p>
+                <p className="text-base" style={{color: colors.smoke}}>+46 707314500</p>
+                <a 
+                  href="https://hopfarmbeach.com/cabin/"
+                  className="inline-flex items-center gap-2 mt-4 px-5 py-2 rounded text-sm font-medium transition-all hover:opacity-80"
+                  style={{backgroundColor: colors.smoke, color: '#f3f1ed'}}
+                >
+                  Book Your Stay
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+              </div>
+
+              {/* Right: Social */}
+              <div className="text-center md:text-right space-y-2">
+                {[
+                  { name: 'Instagram', href: 'https://www.instagram.com/hopfarmbeach/' },
+                  { name: 'Facebook', href: 'https://www.facebook.com/hopfarmbeach' },
+                  { name: 'TikTok', href: 'https://www.tiktok.com/@hopfarmbeach' }
+                ].map(item => (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-lg font-medium transition-all hover:underline md:hover:-translate-x-2"
+                    style={{color: colors.smoke}}
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t mb-4" style={{borderColor: '#75735f63'}} />
+
+            {/* Bottom Links */}
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm" style={{color: colors.smoke}}>
+              <a href="https://hopfarmbeach.com/my-account/" className="hover:underline">My Account</a>
+              <a href="https://hopfarmbeach.com/cabin/faq/" className="hover:underline">FAQ</a>
+              <a href="https://hopfarmbeach.com/privacy-policy/" className="hover:underline">Privacy Policy</a>
+              <a href="https://hopfarmbeach.com/imprint/" className="hover:underline">Imprint</a>
+              <a href="https://hopfarmbeach.com/terms-conditions/" className="hover:underline">Terms & Conditions</a>
+            </div>
           </div>
+        </div>
+
+        {/* Copyright Bar */}
+        <div className="py-4 px-4 text-center text-sm" style={{backgroundColor: colors.dunesGrass, color: '#f3f1ed'}}>
+          Copyright Hop Farm Beach © 2026 - Web Design by Tom Robak
         </div>
       </footer>
 

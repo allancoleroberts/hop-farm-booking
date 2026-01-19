@@ -116,6 +116,7 @@ db.exec(`
     currency TEXT NOT NULL DEFAULT 'SEK',
     stripe_session_id TEXT,
     source TEXT NOT NULL DEFAULT 'direct',
+    country TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
@@ -134,12 +135,13 @@ db.exec(`
   INSERT OR IGNORE INTO settings (key, value) VALUES ('ical_url', '');
 `);
 
-// Add source column if it doesn't exist (migration for existing db)
+// Add columns if they don't exist (migration for existing db)
 try {
   db.exec(`ALTER TABLE bookings ADD COLUMN source TEXT NOT NULL DEFAULT 'direct'`);
-} catch (e) {
-  // Column already exists
-}
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE bookings ADD COLUMN country TEXT`);
+} catch (e) {}
 
 const stripe = process.env.STRIPE_SECRET_KEY 
   ? new Stripe(process.env.STRIPE_SECRET_KEY) 
@@ -394,7 +396,7 @@ app.post('/api/admin/cancel', requireAuth, (req, res) => {
 
 // Manual booking creation (for Booking.com, Airbnb, etc.)
 app.post('/api/admin/booking', requireAuth, (req, res) => {
-  const { guestName, checkIn, checkOut, guests, source, notes } = req.body;
+  const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
   
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
@@ -402,6 +404,7 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
   
   const cleanName = sanitize(guestName);
   const cleanSource = sanitize(source) || 'manual';
+  const cleanCountry = sanitize(country) || null;
   const ref = generateRef();
   
   const checkInDate = new Date(checkIn);
@@ -409,13 +412,41 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
   
   try {
-    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource);
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, country, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry);
     
     res.json({ success: true, booking_ref: ref });
   } catch (err) {
     console.error('Manual booking error:', err);
     res.status(500).json({ error: 'Failed to create booking' });
+  }
+});
+
+// Edit booking
+app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
+  
+  if (!guestName || !checkIn || !checkOut) {
+    return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
+  }
+  
+  const cleanName = sanitize(guestName);
+  const cleanSource = sanitize(source) || 'manual';
+  const cleanCountry = sanitize(country) || null;
+  
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+  
+  try {
+    db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ? WHERE id = ?`)
+      .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, id);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Edit booking error:', err);
+    res.status(500).json({ error: 'Failed to update booking' });
   }
 });
 

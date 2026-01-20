@@ -10,7 +10,7 @@ import Database from 'better-sqlite3';
 import { Resend } from 'resend';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync } from 'fs';
 import crypto from 'crypto';
 
 // Config
@@ -101,7 +101,7 @@ if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true });
 
 console.log(`Database path: ${dbPath}`);
 
-const db = new Database(dbPath);
+let db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -561,10 +561,107 @@ function parseIcal(data) {
 app.post('/api/admin/settings', requireAuth, (req, res) => {
   const { key, value } = req.body;
   if (!key || value === undefined) return res.status(400).json({ error: 'Key and value required' });
-  
+
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
   res.json({ success: true });
 });
+
+// Database backup endpoints
+const backupDir = join(dbDir, 'backups');
+if (!existsSync(backupDir)) mkdirSync(backupDir, { recursive: true });
+
+// Create backup
+app.post('/api/admin/backup', requireAuth, (req, res) => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupPath = join(backupDir, `bookings-${timestamp}.db`);
+
+    // Close and reopen DB to ensure all changes are written
+    db.close();
+    copyFileSync(dbPath, backupPath);
+
+    // Reopen database
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+
+    // Clean up old backups (keep last 10)
+    const backups = readdirSync(backupDir)
+      .filter(f => f.endsWith('.db'))
+      .map(f => ({ name: f, path: join(backupDir, f), time: statSync(join(backupDir, f)).mtime }))
+      .sort((a, b) => b.time - a.time);
+
+    backups.slice(10).forEach(b => unlinkSync(b.path));
+
+    console.log(`Backup created: ${backupPath}`);
+    res.json({ success: true, backup: `bookings-${timestamp}.db`, total: backups.length });
+  } catch (err) {
+    console.error('Backup error:', err);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
+// List backups
+app.get('/api/admin/backups', requireAuth, (req, res) => {
+  try {
+    const backups = readdirSync(backupDir)
+      .filter(f => f.endsWith('.db'))
+      .map(f => {
+        const stats = statSync(join(backupDir, f));
+        return {
+          name: f,
+          size: stats.size,
+          created: stats.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => new Date(b.created) - new Date(a.created));
+
+    res.json(backups);
+  } catch (err) {
+    console.error('List backups error:', err);
+    res.json([]);
+  }
+});
+
+// Restore from backup
+app.post('/api/admin/restore', requireAuth, (req, res) => {
+  const { backup } = req.body;
+  if (!backup) return res.status(400).json({ error: 'Backup name required' });
+
+  const backupPath = join(backupDir, backup);
+  if (!existsSync(backupPath)) {
+    return res.status(404).json({ error: 'Backup not found' });
+  }
+
+  try {
+    // Close database
+    db.close();
+
+    // Restore backup
+    copyFileSync(backupPath, dbPath);
+
+    // Reopen database
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+
+    console.log(`Database restored from: ${backup}`);
+    res.json({ success: true, restored: backup });
+  } catch (err) {
+    console.error('Restore error:', err);
+    res.status(500).json({ error: 'Failed to restore backup' });
+  }
+});
+
+// Auto-backup on startup
+setTimeout(() => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupPath = join(backupDir, `bookings-startup-${timestamp}.db`);
+    copyFileSync(dbPath, backupPath);
+    console.log(`Startup backup created: ${backupPath}`);
+  } catch (err) {
+    console.error('Startup backup error:', err);
+  }
+}, 5000); // Wait 5 seconds after startup
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, '../dist')));

@@ -297,27 +297,27 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Specs Grid */}
           <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>👥</span>
+              <span>üë•</span>
               <span><strong>Max occupancy:</strong> Sleeps 4</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>🛏</span>
-              <span><strong>Beds:</strong> 2 Double (160×200)</span>
+              <span>üõè</span>
+              <span><strong>Beds:</strong> 2 Double (160√ó200)</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>📐</span>
-              <span><strong>Room size:</strong> 32m²</span>
+              <span>üìê</span>
+              <span><strong>Room size:</strong> 32m¬≤</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>🚿</span>
+              <span>üöø</span>
               <span><strong>Bathrooms:</strong> 1</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>🚭</span>
+              <span>üö≠</span>
               <span><strong>Smoking:</strong> Non-smoking</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>🐕</span>
+              <span>üêï</span>
               <span><strong>Pets:</strong> Not allowed</span>
             </div>
           </div>
@@ -333,11 +333,11 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Good to Know */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Good to Know</h3>
           <div className="space-y-2 text-sm mb-4" style={{ color: colors.dunesGrass }}>
-            <p><strong>No WiFi, No TV</strong> – That's the point. 5G cell service works if you need it.</p>
-            <p><strong>15 minutes from town</strong> – Stock up on food before arrival. No nearby shops.</p>
-            <p><strong>Private forest</strong> – No visible neighbours. Very quiet.</p>
-            <p><strong>Sauna</strong> – Electric sauna by the cabin. Takes 30 minutes to heat up.</p>
-            <p><strong>Parking</strong> – Private parking on property. One-minute walk to cabin.</p>
+            <p><strong>No WiFi, No TV</strong> ‚Äì That's the point. 5G cell service works if you need it.</p>
+            <p><strong>15 minutes from town</strong> ‚Äì Stock up on food before arrival. No nearby shops.</p>
+            <p><strong>Private forest</strong> ‚Äì No visible neighbours. Very quiet.</p>
+            <p><strong>Sauna</strong> ‚Äì Electric sauna by the cabin. Takes 30 minutes to heat up.</p>
+            <p><strong>Parking</strong> ‚Äì Private parking on property. One-minute walk to cabin.</p>
           </div>
 
           {/* Cancellation Policy - subtle section */}
@@ -436,7 +436,7 @@ function BookingPage() {
   }
 
   const formatDate = (date) => {
-    if (!date) return '—'
+    if (!date) return '‚Äî'
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
@@ -530,12 +530,12 @@ function BookingPage() {
                 Sleeps four. No WiFi. Sauna included.
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-4" style={{color: colors.dunesGrass}}>
-                <span>👥 Sleeps 4</span>
-                <span>🛏 2 double beds (160×200)</span>
-                <span>🚿 1 Bathroom</span>
+                <span>üë• Sleeps 4</span>
+                <span>üõè 2 double beds (160√ó200)</span>
+                <span>üöø 1 Bathroom</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
+                {['32m¬≤', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
                   <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
@@ -590,7 +590,7 @@ function BookingPage() {
                 }}
               >
                 <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
-                  {selectionState === 'check-in' ? '👉 SELECT CHECK-IN' : 'CHECK-IN'}
+                  {selectionState === 'check-in' ? 'üëâ SELECT CHECK-IN' : 'CHECK-IN'}
                 </div>
                 <div className="font-medium" style={{color: range.from ? colors.smoke : colors.sand}}>
                   {formatDate(range.from)}
@@ -604,7 +604,7 @@ function BookingPage() {
                 }}
               >
                 <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
-                  {selectionState === 'check-out' ? '👉 SELECT CHECK-OUT' : 'CHECK-OUT'}
+                  {selectionState === 'check-out' ? 'üëâ SELECT CHECK-OUT' : 'CHECK-OUT'}
                 </div>
                 <div className="font-medium" style={{color: range.to ? colors.smoke : colors.sand}}>
                   {formatDate(range.to)}
@@ -804,7 +804,7 @@ function BookingPage() {
 
         {/* Copyright Bar */}
         <div className="py-4 px-4 text-center text-sm" style={{backgroundColor: colors.dunesGrass, color: '#f3f1ed'}}>
-          Copyright Hop Farm Beach © 2026 - Web Design by Tom Robak
+          Copyright Hop Farm Beach ¬© 2026 - Web Design by Tom Robak
         </div>
       </footer>
 
@@ -1046,7 +1046,7 @@ function SuccessPage({ search }) {
         </div>
         <div className="mt-8 text-center">
           <a href="/" className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>
-            ← BACK TO HOP FARM BEACH
+            ‚Üê BACK TO HOP FARM BEACH
           </a>
         </div>
       </main>
@@ -1068,6 +1068,8 @@ function AdminPage() {
   const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' })
   const [icalUrl, setIcalUrl] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [sortBy, setSortBy] = useState('checkIn')
+  const [sortDirection, setSortDirection] = useState('asc')
 
   // Check for existing token on mount
   useEffect(() => {
@@ -1082,31 +1084,31 @@ function AdminPage() {
 
   const countries = [
     { code: '', name: 'Select country' },
-    { code: 'SE', name: '🇸🇪 Sweden' },
-    { code: 'NO', name: '🇳🇴 Norway' },
-    { code: 'DK', name: '🇩🇰 Denmark' },
-    { code: 'FI', name: '🇫🇮 Finland' },
-    { code: 'DE', name: '🇩🇪 Germany' },
-    { code: 'NL', name: '🇳🇱 Netherlands' },
-    { code: 'GB', name: '🇬🇧 United Kingdom' },
-    { code: 'US', name: '🇺🇸 United States' },
-    { code: 'CA', name: '🇨🇦 Canada' },
-    { code: 'FR', name: '🇫🇷 France' },
-    { code: 'ES', name: '🇪🇸 Spain' },
-    { code: 'IT', name: '🇮🇹 Italy' },
-    { code: 'CH', name: '🇨🇭 Switzerland' },
-    { code: 'AT', name: '🇦🇹 Austria' },
-    { code: 'BE', name: '🇧🇪 Belgium' },
-    { code: 'PL', name: '🇵🇱 Poland' },
-    { code: 'AU', name: '🇦🇺 Australia' },
-    { code: 'OTHER', name: '🌍 Other' },
+    { code: 'SE', name: 'üá∏üá™ Sweden' },
+    { code: 'NO', name: 'üá≥üá¥ Norway' },
+    { code: 'DK', name: 'üá©üá∞ Denmark' },
+    { code: 'FI', name: 'üá´üáÆ Finland' },
+    { code: 'DE', name: 'üá©üá™ Germany' },
+    { code: 'NL', name: 'üá≥üá± Netherlands' },
+    { code: 'GB', name: 'üá¨üáß United Kingdom' },
+    { code: 'US', name: 'üá∫üá∏ United States' },
+    { code: 'CA', name: 'üá®üá¶ Canada' },
+    { code: 'FR', name: 'üá´üá∑ France' },
+    { code: 'ES', name: 'üá™üá∏ Spain' },
+    { code: 'IT', name: 'üáÆüáπ Italy' },
+    { code: 'CH', name: 'üá®üá≠ Switzerland' },
+    { code: 'AT', name: 'üá¶üáπ Austria' },
+    { code: 'BE', name: 'üáßüá™ Belgium' },
+    { code: 'PL', name: 'üáµüá± Poland' },
+    { code: 'AU', name: 'üá¶üá∫ Australia' },
+    { code: 'OTHER', name: 'üåç Other' },
   ]
 
   const countryFlags = {
-    'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'DE': '🇩🇪',
-    'NL': '🇳🇱', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'FR': '🇫🇷',
-    'ES': '🇪🇸', 'IT': '🇮🇹', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
-    'PL': '🇵🇱', 'AU': '🇦🇺', 'OTHER': '🌍'
+    'SE': 'üá∏üá™', 'NO': 'üá≥üá¥', 'DK': 'üá©üá∞', 'FI': 'üá´üáÆ', 'DE': 'üá©üá™',
+    'NL': 'üá≥üá±', 'GB': 'üá¨üáß', 'US': 'üá∫üá∏', 'CA': 'üá®üá¶', 'FR': 'üá´üá∑',
+    'ES': 'üá™üá∏', 'IT': 'üáÆüáπ', 'CH': 'üá®üá≠', 'AT': 'üá¶üáπ', 'BE': 'üáßüá™',
+    'PL': 'üáµüá±', 'AU': 'üá¶üá∫', 'OTHER': 'üåç'
   }
 
   const login = async (e) => {
@@ -1298,19 +1300,99 @@ function AdminPage() {
     return days
   }
 
+  // Build a map of dates to booking info
   const bookedDates = new Set()
+  const dateBookingMap = {}
   bookings.filter(b => b.status === 'confirmed').forEach(b => {
     // Parse dates without timezone issues
     const [inYear, inMonth, inDay] = b.check_in.split('-').map(Number)
     const [outYear, outMonth, outDay] = b.check_out.split('-').map(Number)
     let d = new Date(inYear, inMonth - 1, inDay)
     const end = new Date(outYear, outMonth - 1, outDay)
+    const checkInStr = b.check_in
+    const checkOutStr = b.check_out
+
     while (d < end) {
       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       bookedDates.add(dateStr)
+
+      // Store booking info for each date
+      if (!dateBookingMap[dateStr]) {
+        dateBookingMap[dateStr] = []
+      }
+      dateBookingMap[dateStr].push({
+        name: b.guest_name,
+        isCheckIn: dateStr === checkInStr,
+        isCheckOut: dateStr === checkOutStr,
+        source: b.source
+      })
+
       d.setDate(d.getDate() + 1)
     }
   })
+
+  // Sorting function
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedBookings = [...bookings].sort((a, b) => {
+    let aVal, bVal
+
+    switch(sortBy) {
+      case 'checkIn':
+        aVal = new Date(a.check_in)
+        bVal = new Date(b.check_in)
+        break
+      case 'source':
+        aVal = (a.source || 'direct').toLowerCase()
+        bVal = (b.source || 'direct').toLowerCase()
+        break
+      case 'country':
+        aVal = (a.country || '').toLowerCase()
+        bVal = (b.country || '').toLowerCase()
+        break
+      case 'guest':
+        aVal = (a.guest_name || '').toLowerCase()
+        bVal = (b.guest_name || '').toLowerCase()
+        break
+      case 'status':
+        aVal = (a.status || '').toLowerCase()
+        bVal = (b.status || '').toLowerCase()
+        break
+      default:
+        aVal = new Date(a.check_in)
+        bVal = new Date(b.check_in)
+    }
+
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const SortIcon = ({ column }) => {
+    if (sortBy !== column) {
+      return (
+        <svg className="w-3 h-3 inline ml-1 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-3 h-3 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    )
+  }
 
   return (
     <div className="min-h-screen" style={{backgroundColor: colors.stone}}>
@@ -1488,29 +1570,39 @@ function AdminPage() {
               <thead style={{backgroundColor: colors.stone}}>
                 <tr className="text-left text-sm" style={{color: colors.dunesGrass}}>
                   <th className="px-4 py-3 font-medium">Ref</th>
-                  <th className="px-4 py-3 font-medium">Guest</th>
-                  <th className="px-4 py-3 font-medium">Dates</th>
-                  <th className="px-4 py-3 font-medium">Source</th>
-                  <th className="px-4 py-3 font-medium">Country</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('guest')}>
+                    Guest<SortIcon column="guest" />
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('checkIn')}>
+                    Dates<SortIcon column="checkIn" />
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('source')}>
+                    Source<SortIcon column="source" />
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('country')}>
+                    Country<SortIcon column="country" />
+                  </th>
+                  <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('status')}>
+                    Status<SortIcon column="status" />
+                  </th>
                   <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.length === 0 ? (
+                {sortedBookings.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
                       No bookings yet
                     </td>
                   </tr>
-                ) : bookings.map(b => (
+                ) : sortedBookings.map(b => (
                   <tr key={b.id} style={{borderTop: `1px solid ${colors.stone}`}}>
                     <td className="px-4 py-3 font-mono text-sm" style={{color: colors.smoke}}>{b.booking_ref}</td>
                     <td className="px-4 py-3">
                       <span style={{color: colors.smoke}}>{b.guest_name}</span>
                       {b.guest_email && <><br/><span className="text-sm" style={{color: colors.dunesGrass}}>{b.guest_email}</span></>}
                     </td>
-                    <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
+                    <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} ‚Üí {b.check_out}</td>
                     <td className="px-4 py-3">
                       <span 
                         className="px-2 py-1 rounded text-xs font-medium"
@@ -1571,7 +1663,7 @@ function AdminPage() {
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >
-                ←
+                ‚Üê
               </button>
               <span className="font-dreamers tracking-wider" style={{color: colors.smoke}}>
                 {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
@@ -1581,7 +1673,7 @@ function AdminPage() {
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >
-                →
+                ‚Üí
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3" style={{color: colors.dunesGrass}}>
@@ -1593,11 +1685,12 @@ function AdminPage() {
                 const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
                 const isBlocked = blocked.includes(dateStr)
                 const isBooked = bookedDates.has(dateStr)
+                const bookingInfo = dateBookingMap[dateStr]?.[0]
                 const isPast = day < new Date(new Date().setHours(0,0,0,0))
-                
+
                 let bgColor = '#ecfdf5'
                 let textColor = colors.dunesGrass
-                
+
                 if (isPast) {
                   bgColor = colors.stone
                   textColor = colors.sand
@@ -1608,16 +1701,33 @@ function AdminPage() {
                   bgColor = '#fee2e2'
                   textColor = '#991b1b'
                 }
-                
+
                 return (
                   <button
                     key={i}
                     onClick={() => !isPast && !isBooked && toggleBlock(dateStr)}
                     disabled={isPast || isBooked}
-                    className="aspect-square rounded-lg text-sm font-medium"
+                    className="rounded-lg text-xs font-medium p-1 flex flex-col items-center justify-start min-h-[80px] relative"
                     style={{backgroundColor: bgColor, color: textColor}}
                   >
-                    {day.getDate()}
+                    <div className="font-semibold mb-1">{day.getDate()}</div>
+                    {bookingInfo && (
+                      <>
+                        <div className="text-[10px] leading-tight text-center overflow-hidden w-full px-1" style={{wordBreak: 'break-word'}}>
+                          {bookingInfo.name}
+                        </div>
+                        {bookingInfo.isCheckIn && (
+                          <div className="text-[9px] mt-1 px-1 py-0.5 rounded" style={{backgroundColor: colors.dunesGrass, color: 'white'}}>
+                            IN
+                          </div>
+                        )}
+                        {bookingInfo.isCheckOut && (
+                          <div className="text-[9px] mt-1 px-1 py-0.5 rounded" style={{backgroundColor: colors.smoke, color: 'white'}}>
+                            OUT
+                          </div>
+                        )}
+                      </>
+                    )}
                   </button>
                 )
               })}
@@ -1670,7 +1780,7 @@ function AdminPage() {
               {syncing ? 'Syncing...' : 'Sync Now'}
             </button>
             <p className="text-xs mt-4" style={{color: colors.dunesGrass}}>
-              To get your iCal URL: Google Calendar → Settings → [Your Calendar] → Integrate calendar → Secret address in iCal format
+              To get your iCal URL: Google Calendar ‚Üí Settings ‚Üí [Your Calendar] ‚Üí Integrate calendar ‚Üí Secret address in iCal format
             </p>
           </div>
         )}

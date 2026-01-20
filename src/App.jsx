@@ -305,23 +305,23 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
               <span><strong>Beds:</strong> 2 Double (160√ó200)</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üìê</span>
-              <span><strong>Room size:</strong> 32m¬≤</span>
+              <span👥üìê</span>
+              <span><🛏>Room size:</strong> 32m¬≤</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
               <span>üöø</span>
-              <span><strong>Bathrooms:</strong> 1</span>
+              <span📐strong>Bathrooms:</strong> 1</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üö≠</span>
+              <span🚿üö≠</span>
               <span><strong>Smoking:</strong> Non-smoking</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üêï</span>
+              <span🚭üêï</span>
               <span><strong>Pets:</strong> Not allowed</span>
             </div>
           </div>
-
+🐕
           {/* Amenities */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Amenities</h3>
           <p className="text-sm mb-6" style={{ color: colors.dunesGrass }}>
@@ -534,9 +534,9 @@ function BookingPage() {
                 <span>üõè 2 double beds (160√ó200)</span>
                 <span>üöø 1 Bathroom</span>
               </div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {['32m¬≤', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
-                  <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
+              <div 👥="flex flex-wrap gap-2 mb-4">
+                {['32m🛏 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
+                  <🚿 key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
                 ))}
@@ -1088,27 +1088,27 @@ function AdminPage() {
     { code: 'NO', name: 'üá≥üá¥ Norway' },
     { code: 'DK', name: 'üá©üá∞ Denmark' },
     { code: 'FI', name: 'üá´üáÆ Finland' },
-    { code: 'DE', name: 'üá©üá™ Germany' },
-    { code: 'NL', name: 'üá≥üá± Netherlands' },
-    { code: 'GB', name: 'üá¨üáß United Kingdom' },
-    { code: 'US', name: 'üá∫üá∏ United States' },
-    { code: 'CA', name: 'üá®üá¶ Canada' },
-    { code: 'FR', name: 'üá´üá∑ France' },
-    { code: 'ES', name: 'üá™üá∏ Spain' },
-    { code: 'IT', name: 'üáÆüáπ Italy' },
-    { code: 'CH', name: 'üá®üá≠ Switzerland' },
-    { code: 'AT', name: 'üá¶üáπ Austria' },
-    { code: 'BE', name: 'üáßüá™ Belgium' },
-    { code: 'PL', name: 'üáµüá± Poland' },
-    { code: 'AU', name: 'üá¶üá∫ Australia' },
-    { code: 'OTHER', name: 'üåç Other' },
-  ]
-
-  const countryFlags = {
-    'SE': 'üá∏üá™', 'NO': 'üá≥üá¥', 'DK': 'üá©üá∞', 'FI': 'üá´üáÆ', 'DE': 'üá©üá™',
-    'NL': 'üá≥üá±', 'GB': 'üá¨üáß', 'US': 'üá∫üá∏', 'CA': 'üá®üá¶', 'FR': 'üá´üá∑',
-    'ES': 'üá™üá∏', 'IT': 'üáÆüáπ', 'CH': 'üá®üá≠', 'AT': 'üá¶üáπ', 'BE': 'üáßüá™',
-    'PL': 'üáµüá±', 'AU': 'üá¶üá∫', 'OTHER': 'üåç'
+    { code: 'SE', name: '🇸🇪 Sweden' },
+    { code: 'NO', name: '🇳🇴 Norway' },
+    { code: 'DK', name: '🇩🇰 Denmark' },
+    { code: 'FI', name: '🇫🇮 Finland' },
+    { code: 'DE', name: '🇩🇪 Germany' },
+    { code: 'NL', name: '🇳🇱 Netherlands' },
+    { code: 'GB', name: '🇬🇧 United Kingdom' },
+    { code: 'US', name: '🇺🇸 United States' },
+    { code: 'CA', name: '🇨🇦 Canada' },
+    { code: 'FR', name: '🇫🇷 France' },
+    { code: 'ES', name: '🇪🇸 Spain' },
+    { code: 'IT', name: '🇮🇹 Italy' },
+    { code: 'CH', name: '🇨🇭 Switzerland' },
+    { code: 'AT', name: '🇦🇹 Austria' },
+    { code: 'BE', name: '🇧🇪 Belgium' },
+    { code: 'PL', name: '🇵🇱 Poland' },
+    { code: 'AU', name: '🇦🇺 Australia' },
+    { code: 'OTHER', name: '🌍 Other' },
+        'NL': '🇳🇱', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'FR': '🇫🇷',
+        'ES': '🇪🇸', 'IT': '🇮🇹', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+        'PL': '🇵🇱', 'AU': '🇦🇺', 'OTHER': '🌍'
   }
 
   const login = async (e) => {

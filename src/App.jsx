@@ -19,13 +19,21 @@ const galleryImages = [
   { src: '/gallery-6.png', alt: 'Floor plan' }
 ]
 
-// Preload first image for faster initial display
+// Preload first TWO images for faster gallery experience
 if (typeof window !== 'undefined') {
-  const link = document.createElement('link')
-  link.rel = 'preload'
-  link.as = 'image'
-  link.href = '/gallery-0.webp'
-  document.head.appendChild(link)
+  // Preload hero image
+  const link1 = document.createElement('link')
+  link1.rel = 'preload'
+  link1.as = 'image'
+  link1.href = '/gallery-0.webp'
+  document.head.appendChild(link1)
+
+  // Preload second image
+  const link2 = document.createElement('link')
+  link2.rel = 'preload'
+  link2.as = 'image'
+  link2.href = '/gallery-1.jpg'
+  document.head.appendChild(link2)
 }
 
 // Simple router
@@ -103,10 +111,11 @@ function ImageGallery() {
         onMouseLeave={() => setIsHovering(false)}
         onClick={openLightbox}
       >
-        <img 
-          src={galleryImages[currentIndex].src} 
+        <img
+          src={galleryImages[currentIndex].src}
           alt={galleryImages[currentIndex].alt}
-          loading={currentIndex === 0 ? 'eager' : 'lazy'}
+          loading={currentIndex <= 1 ? 'eager' : 'lazy'}
+          fetchpriority={currentIndex === 0 ? 'high' : 'auto'}
           className="w-full h-full object-cover transition-transform duration-300"
         />
         
@@ -297,31 +306,31 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Specs Grid */}
           <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üë•</span>
+              <span>👥</span>
               <span><strong>Max occupancy:</strong> Sleeps 4</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üõè</span>
-              <span><strong>Beds:</strong> 2 Double (160√ó200)</span>
+              <span>🛏</span>
+              <span><strong>Beds:</strong> 2 Double (160×200)</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span👥üìê</span>
-              <span><🛏>Room size:</strong> 32m¬≤</span>
+              <span>📐</span>
+              <span><strong>Room size:</strong> 32m²</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span>üöø</span>
-              <span📐strong>Bathrooms:</strong> 1</span>
+              <span>🚿</span>
+              <span><strong>Bathrooms:</strong> 1</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span🚿üö≠</span>
+              <span>🚭</span>
               <span><strong>Smoking:</strong> Non-smoking</span>
             </div>
             <div className="flex items-center gap-2" style={{ color: colors.smoke }}>
-              <span🚭üêï</span>
+              <span>🐕</span>
               <span><strong>Pets:</strong> Not allowed</span>
             </div>
           </div>
-🐕
+
           {/* Amenities */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Amenities</h3>
           <p className="text-sm mb-6" style={{ color: colors.dunesGrass }}>
@@ -333,11 +342,11 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Good to Know */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Good to Know</h3>
           <div className="space-y-2 text-sm mb-4" style={{ color: colors.dunesGrass }}>
-            <p><strong>No WiFi, No TV</strong> ‚Äì That's the point. 5G cell service works if you need it.</p>
-            <p><strong>15 minutes from town</strong> ‚Äì Stock up on food before arrival. No nearby shops.</p>
-            <p><strong>Private forest</strong> ‚Äì No visible neighbours. Very quiet.</p>
-            <p><strong>Sauna</strong> ‚Äì Electric sauna by the cabin. Takes 30 minutes to heat up.</p>
-            <p><strong>Parking</strong> ‚Äì Private parking on property. One-minute walk to cabin.</p>
+            <p><strong>No WiFi, No TV</strong> – That's the point. 5G cell service works if you need it.</p>
+            <p><strong>15 minutes from town</strong> – Stock up on food before arrival. No nearby shops.</p>
+            <p><strong>Private forest</strong> – No visible neighbours. Very quiet.</p>
+            <p><strong>Sauna</strong> – Electric sauna by the cabin. Takes 30 minutes to heat up.</p>
+            <p><strong>Parking</strong> – Private parking on property. One-minute walk to cabin.</p>
           </div>
 
           {/* Cancellation Policy - subtle section */}
@@ -436,7 +445,7 @@ function BookingPage() {
   }
 
   const formatDate = (date) => {
-    if (!date) return '‚Äî'
+    if (!date) return '—'
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
@@ -530,13 +539,13 @@ function BookingPage() {
                 Sleeps four. No WiFi. Sauna included.
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mb-4" style={{color: colors.dunesGrass}}>
-                <span>üë• Sleeps 4</span>
-                <span>üõè 2 double beds (160√ó200)</span>
-                <span>üöø 1 Bathroom</span>
+                <span>👥 Sleeps 4</span>
+                <span>🛏 2 double beds (160×200)</span>
+                <span>🚿 1 Bathroom</span>
               </div>
-              <div 👥="flex flex-wrap gap-2 mb-4">
-                {['32m🛏 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
-                  <🚿 key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
+                  <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
                 ))}
@@ -590,7 +599,7 @@ function BookingPage() {
                 }}
               >
                 <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
-                  {selectionState === 'check-in' ? 'üëâ SELECT CHECK-IN' : 'CHECK-IN'}
+                  {selectionState === 'check-in' ? '👉 SELECT CHECK-IN' : 'CHECK-IN'}
                 </div>
                 <div className="font-medium" style={{color: range.from ? colors.smoke : colors.sand}}>
                   {formatDate(range.from)}
@@ -604,7 +613,7 @@ function BookingPage() {
                 }}
               >
                 <div className="text-xs tracking-wider mb-1" style={{color: colors.dunesGrass}}>
-                  {selectionState === 'check-out' ? 'üëâ SELECT CHECK-OUT' : 'CHECK-OUT'}
+                  {selectionState === 'check-out' ? '👉 SELECT CHECK-OUT' : 'CHECK-OUT'}
                 </div>
                 <div className="font-medium" style={{color: range.to ? colors.smoke : colors.sand}}>
                   {formatDate(range.to)}
@@ -804,7 +813,7 @@ function BookingPage() {
 
         {/* Copyright Bar */}
         <div className="py-4 px-4 text-center text-sm" style={{backgroundColor: colors.dunesGrass, color: '#f3f1ed'}}>
-          Copyright Hop Farm Beach ¬© 2026 - Web Design by Tom Robak
+          Copyright Hop Farm Beach © 2026 - Web Design by Tom Robak
         </div>
       </footer>
 
@@ -1046,7 +1055,7 @@ function SuccessPage({ search }) {
         </div>
         <div className="mt-8 text-center">
           <a href="/" className="font-dreamers tracking-wider text-sm" style={{color: colors.dunesGrass}}>
-            ‚Üê BACK TO HOP FARM BEACH
+            ← BACK TO HOP FARM BEACH
           </a>
         </div>
       </main>
@@ -1084,10 +1093,6 @@ function AdminPage() {
 
   const countries = [
     { code: '', name: 'Select country' },
-    { code: 'SE', name: 'üá∏üá™ Sweden' },
-    { code: 'NO', name: 'üá≥üá¥ Norway' },
-    { code: 'DK', name: 'üá©üá∞ Denmark' },
-    { code: 'FI', name: 'üá´üáÆ Finland' },
     { code: 'SE', name: '🇸🇪 Sweden' },
     { code: 'NO', name: '🇳🇴 Norway' },
     { code: 'DK', name: '🇩🇰 Denmark' },
@@ -1106,9 +1111,13 @@ function AdminPage() {
     { code: 'PL', name: '🇵🇱 Poland' },
     { code: 'AU', name: '🇦🇺 Australia' },
     { code: 'OTHER', name: '🌍 Other' },
-        'NL': '🇳🇱', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'FR': '🇫🇷',
-        'ES': '🇪🇸', 'IT': '🇮🇹', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
-        'PL': '🇵🇱', 'AU': '🇦🇺', 'OTHER': '🌍'
+  ]
+
+  const countryFlags = {
+    'SE': '🇸🇪', 'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'DE': '🇩🇪',
+    'NL': '🇳🇱', 'GB': '🇬🇧', 'US': '🇺🇸', 'CA': '🇨🇦', 'FR': '🇫🇷',
+    'ES': '🇪🇸', 'IT': '🇮🇹', 'CH': '🇨🇭', 'AT': '🇦🇹', 'BE': '🇧🇪',
+    'PL': '🇵🇱', 'AU': '🇦🇺', 'OTHER': '🌍'
   }
 
   const login = async (e) => {
@@ -1602,7 +1611,7 @@ function AdminPage() {
                       <span style={{color: colors.smoke}}>{b.guest_name}</span>
                       {b.guest_email && <><br/><span className="text-sm" style={{color: colors.dunesGrass}}>{b.guest_email}</span></>}
                     </td>
-                    <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} ‚Üí {b.check_out}</td>
+                    <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
                     <td className="px-4 py-3">
                       <span 
                         className="px-2 py-1 rounded text-xs font-medium"
@@ -1663,7 +1672,7 @@ function AdminPage() {
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >
-                ‚Üê
+                ←
               </button>
               <span className="font-dreamers tracking-wider" style={{color: colors.smoke}}>
                 {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
@@ -1673,7 +1682,7 @@ function AdminPage() {
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >
-                ‚Üí
+                →
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3" style={{color: colors.dunesGrass}}>
@@ -1780,7 +1789,7 @@ function AdminPage() {
               {syncing ? 'Syncing...' : 'Sync Now'}
             </button>
             <p className="text-xs mt-4" style={{color: colors.dunesGrass}}>
-              To get your iCal URL: Google Calendar ‚Üí Settings ‚Üí [Your Calendar] ‚Üí Integrate calendar ‚Üí Secret address in iCal format
+              To get your iCal URL: Google Calendar → Settings → [Your Calendar] → Integrate calendar → Secret address in iCal format
             </p>
           </div>
         )}

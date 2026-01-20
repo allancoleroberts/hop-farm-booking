@@ -1079,6 +1079,9 @@ function AdminPage() {
   const [syncing, setSyncing] = useState(false)
   const [sortBy, setSortBy] = useState('checkIn')
   const [sortDirection, setSortDirection] = useState('asc')
+  const [backups, setBackups] = useState([])
+  const [backupLoading, setBackupLoading] = useState(false)
+  const [restoring, setRestoring] = useState(false)
 
   // Check for existing token on mount
   useEffect(() => {
@@ -1259,6 +1262,61 @@ function AdminPage() {
       alert('Sync failed')
     }
     setSyncing(false)
+  }
+
+  const loadBackups = async () => {
+    try {
+      const res = await fetch('/api/admin/backups', { headers: authHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        setBackups(data)
+      }
+    } catch (err) {
+      console.error('Load backups error:', err)
+    }
+  }
+
+  const createBackup = async () => {
+    setBackupLoading(true)
+    try {
+      const res = await fetch('/api/admin/backup', {
+        method: 'POST',
+        headers: authHeaders()
+      })
+      const data = await res.json()
+      if (res.ok) {
+        alert(`Backup created: ${data.backup}`)
+        loadBackups()
+      } else {
+        alert(data.error || 'Failed to create backup')
+      }
+    } catch (err) {
+      alert('Failed to create backup')
+    }
+    setBackupLoading(false)
+  }
+
+  const restoreBackup = async (backupName) => {
+    if (!confirm(`Restore from backup: ${backupName}?\n\nThis will replace ALL current data!`)) return
+
+    setRestoring(true)
+    try {
+      const res = await fetch('/api/admin/restore', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ backup: backupName })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        alert(`Database restored from: ${backupName}\n\nRefreshing...`)
+        window.location.reload()
+      } else {
+        alert(data.error || 'Failed to restore backup')
+      }
+    } catch (err) {
+      alert('Failed to restore backup')
+    }
+    setRestoring(false)
   }
 
   const sourceColors = {
@@ -1442,8 +1500,18 @@ function AdminPage() {
           >
             Calendar
           </button>
-          <button 
-            onClick={() => setTab('settings')} 
+          <button
+            onClick={() => setTab('backup')}
+            className="px-6 py-4 font-medium"
+            style={{
+              borderBottom: tab === 'backup' ? `2px solid ${colors.smoke}` : '2px solid transparent',
+              color: tab === 'backup' ? colors.smoke : colors.dunesGrass
+            }}
+          >
+            Backup
+          </button>
+          <button
+            onClick={() => setTab('settings')}
             className="px-6 py-4 font-medium"
             style={{
               borderBottom: tab === 'settings' ? `2px solid ${colors.smoke}` : '2px solid transparent',
@@ -1791,6 +1859,50 @@ function AdminPage() {
             <p className="text-xs mt-4" style={{color: colors.dunesGrass}}>
               To get your iCal URL: Google Calendar → Settings → [Your Calendar] → Integrate calendar → Secret address in iCal format
             </p>
+          </div>
+        )}
+        {tab === 'backup' && (
+          <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-medium" style={{color: colors.smoke}}>Database Backups</h3>
+              <button
+                onClick={createBackup}
+                disabled={backupLoading}
+                className="px-4 py-2 rounded text-white font-medium disabled:opacity-50"
+                style={{backgroundColor: colors.smoke}}
+              >
+                {backupLoading ? 'Creating...' : '+ Create Backup'}
+              </button>
+            </div>
+
+            <button onClick={loadBackups} className="mb-4 text-sm underline" style={{color: colors.dunesGrass}}>
+              Refresh List
+            </button>
+
+            {backups.length === 0 ? (
+              <p className="text-sm" style={{color: colors.dunesGrass}}>No backups found. Create your first backup above.</p>
+            ) : (
+              <div className="space-y-2">
+                {backups.map(backup => (
+                  <div key={backup.name} className="flex items-center justify-between p-3 rounded" style={{backgroundColor: colors.stone}}>
+                    <div>
+                      <div className="font-medium" style={{color: colors.smoke}}>{backup.name}</div>
+                      <div className="text-xs" style={{color: colors.dunesGrass}}>
+                        {new Date(backup.created).toLocaleString()} • {(backup.size / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => restoreBackup(backup.name)}
+                      disabled={restoring}
+                      className="px-3 py-1 rounded text-white text-sm font-medium disabled:opacity-50"
+                      style={{backgroundColor: colors.dunesGrass}}
+                    >
+                      {restoring ? 'Restoring...' : 'Restore'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

@@ -486,12 +486,12 @@ function BookingPage() {
           >
             <nav className="space-y-1">
               {[
-                { name: 'Home', href: 'https://hopfarmbeach.com/' },
-                { name: 'Cabin', href: 'https://hopfarmbeach.com/cabin/' },
-                { name: 'History', href: 'https://hopfarmbeach.com/history/' },
-                { name: 'Gallery', href: 'https://hopfarmbeach.com/gallery/' },
-                { name: 'Sustainability', href: 'https://hopfarmbeach.com/sustainability/' },
-                { name: 'Contact', href: 'https://hopfarmbeach.com/contact/' }
+               {[
+  { name: 'Home', href: 'https://hopfarmbeach.com/' },
+  { name: 'The Cabin', href: 'https://hopfarmbeach.com/cabin' },
+  { name: 'Our Story', href: 'https://hopfarmbeach.com/story' },
+  { name: 'FAQ', href: 'https://hopfarmbeach.com/faq' }
+].map(item => (
               ].map(item => (
                 <a
                   key={item.name}

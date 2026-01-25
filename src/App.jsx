@@ -40,7 +40,7 @@ if (typeof window !== 'undefined') {
 function useRoute() {
   const [path, setPath] = useState(window.location.pathname)
   const [search, setSearch] = useState(window.location.search)
-  
+
   useEffect(() => {
     const handler = () => {
       setPath(window.location.pathname)
@@ -49,13 +49,13 @@ function useRoute() {
     window.addEventListener('popstate', handler)
     return () => window.removeEventListener('popstate', handler)
   }, [])
-  
+
   return { path, search }
 }
 
 export default function App() {
   const { path, search } = useRoute()
-  
+
   if (path === '/success') return <SuccessPage search={search} />
   if (path === '/admin') return <AdminPage />
   return <BookingPage />
@@ -105,7 +105,7 @@ function ImageGallery() {
   return (
     <>
       {/* Main Gallery */}
-      <div 
+      <div
         className="relative cursor-pointer overflow-hidden rounded-t-lg md:rounded-l-lg md:rounded-tr-none h-64 md:h-80"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -118,7 +118,7 @@ function ImageGallery() {
           fetchpriority={currentIndex === 0 ? 'high' : 'auto'}
           className="w-full h-full object-cover transition-transform duration-300"
         />
-        
+
         {/* Dots indicator */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
           {galleryImages.map((_, idx) => (
@@ -126,7 +126,7 @@ function ImageGallery() {
               key={idx}
               onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx) }}
               className="w-2 h-2 rounded-full transition-all"
-              style={{ 
+              style={{
                 backgroundColor: idx === currentIndex ? 'white' : 'rgba(255,255,255,0.5)',
                 transform: idx === currentIndex ? 'scale(1.2)' : 'scale(1)'
               }}
@@ -135,7 +135,7 @@ function ImageGallery() {
         </div>
 
         {/* Navigation arrows - show on hover */}
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-between px-3 transition-opacity duration-200"
           style={{ opacity: isHovering ? 1 : 0 }}
         >
@@ -160,7 +160,7 @@ function ImageGallery() {
         </div>
 
         {/* Click to expand hint */}
-        <div 
+        <div
           className="absolute top-3 right-3 px-2 py-1 rounded text-xs text-white transition-opacity duration-200"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)', opacity: isHovering ? 1 : 0 }}
         >
@@ -168,7 +168,7 @@ function ImageGallery() {
         </div>
 
         {/* Image count */}
-        <div 
+        <div
           className="absolute top-3 left-3 px-2 py-1 rounded text-xs text-white"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
         >
@@ -178,7 +178,7 @@ function ImageGallery() {
 
       {/* Lightbox */}
       {isLightboxOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
           onClick={closeLightbox}
@@ -231,7 +231,7 @@ function ImageGallery() {
                 key={idx}
                 onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx) }}
                 className="w-16 h-12 rounded overflow-hidden transition-all"
-                style={{ 
+                style={{
                   opacity: idx === currentIndex ? 1 : 0.5,
                   transform: idx === currentIndex ? 'scale(1.1)' : 'scale(1)',
                   border: idx === currentIndex ? '2px solid white' : '2px solid transparent'
@@ -270,12 +270,12 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
   if (!isOpen) return null
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -299,7 +299,7 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Room Features */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Room Features</h3>
           <p className="text-sm mb-4" style={{ color: colors.dunesGrass }}>
-            Our eco-friendly cabin floats above the land to leave the natural surroundings untouched. 
+            Our eco-friendly cabin floats above the land to leave the natural surroundings untouched.
             A quiet retreat where you can watch the seasons unfold through floor-to-ceiling windows.
           </p>
 
@@ -334,8 +334,8 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           {/* Amenities */}
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Amenities</h3>
           <p className="text-sm mb-6" style={{ color: colors.dunesGrass }}>
-            Air conditioned, Heated floors, Linen & Towels provided, Electric sauna, 
-            Kitchenette with stovetop, Tea/Coffee maker, Bluetooth radio, Private deck, 
+            Air conditioned, Heated floors, Linen & Towels provided, Electric sauna,
+            Kitchenette with stovetop, Tea/Coffee maker, Bluetooth radio, Private deck,
             Phone lockbox for digital detox
           </p>
 
@@ -353,7 +353,7 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           <div className="text-sm mb-6 p-4 rounded-lg" style={{ backgroundColor: colors.stone }}>
             <h4 className="font-medium mb-2" style={{ color: colors.smoke }}>Cancellation Policy</h4>
             <p style={{ color: colors.dunesGrass }}>
-              Full refund if cancelled 28+ days before check-in. Date changes available 14-27 days prior. 
+              Full refund if cancelled 28+ days before check-in. Date changes available 14-27 days prior.
               No changes within 14 days of arrival. <a href="https://hopfarmbeach.com/terms-conditions/" target="_blank" rel="noopener noreferrer" className="underline">Full terms</a>
             </p>
           </div>
@@ -409,8 +409,8 @@ function BookingPage() {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
-  const nights = range.from && range.to 
-    ? Math.ceil((range.to - range.from) / (1000 * 60 * 60 * 24)) 
+  const nights = range.from && range.to
+    ? Math.ceil((range.to - range.from) / (1000 * 60 * 60 * 24))
     : 0
   const total = nights * (settings?.nightlyRate || 3495)
 
@@ -421,7 +421,7 @@ function BookingPage() {
     if (!range.from || !range.to) return setError('Select dates first')
     setLoading(true)
     setError(null)
-    
+
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -459,73 +459,59 @@ function BookingPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{backgroundColor: colors.stone}}>
-      {/* Header */}
-      <header className="py-5 px-6 md:px-12" style={{backgroundColor: colors.stone}}>
-        <div className="max-w-7xl mx-auto">
-          {/* Menu only */}
-          <button 
-            onClick={() => setMenuOpen(true)}
-            className="flex items-center gap-3 text-xs font-medium tracking-widest transition-opacity hover:opacity-70 uppercase"
-            style={{color: colors.smoke}}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span className="hidden sm:inline">Menu</span>
-          </button>
-        </div>
+      {/* Header - matching main site navigation */}
+      <header className="py-4 px-6 md:px-12 flex justify-between items-center" style={{backgroundColor: 'rgba(253, 252, 250, 0.97)', backdropFilter: 'blur(20px)', boxShadow: '0 2px 40px rgba(50, 50, 43, 0.08)'}}>
+        <a href="https://hopfarmbeach.com/">
+          <img src="https://hopfarmbeach.com/images/Logo_HFB.png" alt="Hop Farm Beach" className="h-14 md:h-16" />
+        </a>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-10">
+          <a href="https://hopfarmbeach.com/" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Home</a>
+          <a href="https://hopfarmbeach.com/cabin" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
+          <a href="https://hopfarmbeach.com/story" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
+          <a href="https://hopfarmbeach.com/faq" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
+          <span className="px-5 py-3 rounded-sm font-medium" style={{backgroundColor: colors.sand, color: colors.smoke}}>Book Your Stay</span>
+        </nav>
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMenuOpen(true)}
+          className="md:hidden flex flex-col gap-1.5 p-2"
+        >
+          <span className="w-6 h-0.5 transition-all" style={{backgroundColor: colors.smoke}}></span>
+          <span className="w-6 h-0.5 transition-all" style={{backgroundColor: colors.smoke}}></span>
+          <span className="w-6 h-0.5 transition-all" style={{backgroundColor: colors.smoke}}></span>
+        </button>
       </header>
 
       {/* Mobile Menu Overlay */}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Menu Content */}
-          <div 
-            className="w-full md:w-1/2 h-full flex flex-col justify-center px-8 md:px-16"
-            style={{backgroundColor: colors.dunesGrass}}
-          >
-            <nav className="space-y-1">
-              {[
-               {[
-  { name: 'Home', href: 'https://hopfarmbeach.com/' },
-  { name: 'The Cabin', href: 'https://hopfarmbeach.com/cabin' },
-  { name: 'Our Story', href: 'https://hopfarmbeach.com/story' },
-  { name: 'FAQ', href: 'https://hopfarmbeach.com/faq' }
-].map(item => (
-              ].map(item => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="block text-4xl md:text-5xl font-normal transition-all duration-300 hover:underline hover:translate-x-3"
-                  style={{color: '#f3f1ed', fontFamily: 'Roobert, sans-serif', lineHeight: '1.3'}}
-                >
-                  {item.name}
-                </a>
-              ))}
-            </nav>
-          </div>
-
-          {/* Image Side (hidden on mobile) */}
-          <div 
-            className="hidden md:block w-1/2 h-full bg-cover bg-center"
-            style={{backgroundImage: 'url(https://hopfarmbeach.com/wp-content/uploads/2025/02/Hop-Farm-Beach-Cabin-Rental-Sweden-00033.jpg)'}}
-          />
-
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{backgroundColor: '#FDFCFA'}}>
           {/* Close Button */}
           <button
             onClick={() => setMenuOpen(false)}
             className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center transition-opacity hover:opacity-70"
-            style={{color: '#f3f1ed'}}
+            style={{color: colors.smoke}}
           >
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+
+          {/* Menu Links */}
+          <nav className="flex flex-col items-center gap-8">
+            <a href="https://hopfarmbeach.com/" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Home</a>
+            <a href="https://hopfarmbeach.com/cabin" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
+            <a href="https://hopfarmbeach.com/story" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
+            <a href="https://hopfarmbeach.com/faq" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
+            <span className="mt-4 px-7 py-4 rounded-sm text-lg font-medium" style={{backgroundColor: colors.sand, color: colors.smoke}}>Book Your Stay</span>
+          </nav>
         </div>
       )}
 
       {/* Cabin Info Section */}
-      <section className="max-w-5xl mx-auto px-4 mb-8">
+      <section className="max-w-5xl mx-auto px-4 mb-8 mt-8">
         <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
           <div className="md:flex">
             <div className="md:w-2/5">
@@ -550,7 +536,7 @@ function BookingPage() {
                   </span>
                 ))}
               </div>
-              
+
               {showCabinInfo ? (
                 <div className="text-sm space-y-3" style={{color: colors.smoke}}>
                   <p>32 square metres. Two double beds. Floor-to-ceiling windows facing forest. Everything works, nothing extra.</p>
@@ -558,7 +544,7 @@ function BookingPage() {
                   <p><strong>What's included:</strong> Sliding door for private bedroom, heated floors throughout, air conditioning, towels & bed linen, radio with Bluetooth, board games, phone lockbox for digital detox.</p>
                   <p><strong>Kitchenette:</strong> Electric stovetop, kettle, toaster, coffee maker. Fresh drinkable tap water.</p>
                   <p><strong>Outside:</strong> Private deck, parking, and sauna ready when you are.</p>
-                  <button 
+                  <button
                     onClick={() => setShowCabinInfo(false)}
                     className="underline mt-2"
                     style={{color: colors.dunesGrass}}
@@ -567,7 +553,7 @@ function BookingPage() {
                   </button>
                 </div>
               ) : (
-                <button 
+                <button
                   onClick={() => setShowCabinInfo(true)}
                   className="text-sm underline"
                   style={{color: colors.dunesGrass}}
@@ -588,10 +574,10 @@ function BookingPage() {
             <h2 className="font-dreamers text-2xl tracking-wider mb-4" style={{color: colors.smoke}}>
               SELECT YOUR DATES
             </h2>
-            
+
             {/* Date Selection Status */}
             <div className="flex gap-4 mb-6">
-              <div 
+              <div
                 className="flex-1 p-4 rounded-lg transition-all"
                 style={{
                   backgroundColor: selectionState === 'check-in' ? 'white' : colors.stone,
@@ -605,7 +591,7 @@ function BookingPage() {
                   {formatDate(range.from)}
                 </div>
               </div>
-              <div 
+              <div
                 className="flex-1 p-4 rounded-lg transition-all"
                 style={{
                   backgroundColor: selectionState === 'check-out' ? 'white' : colors.stone,
@@ -623,14 +609,14 @@ function BookingPage() {
 
             {selectionState !== 'complete' && (
               <p className="text-sm mb-4" style={{color: colors.dunesGrass}}>
-                {selectionState === 'check-in' 
+                {selectionState === 'check-in'
                   ? 'Click on a date to select your arrival day'
                   : 'Now click on a date to select your departure day'}
               </p>
             )}
 
-            <Calendar 
-              month={month} 
+            <Calendar
+              month={month}
               setMonth={setMonth}
               unavailable={unavailable}
               range={range}
@@ -651,7 +637,7 @@ function BookingPage() {
                   <span>Total</span>
                   <span>SEK {total.toLocaleString()}</span>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowRateInfo(true)}
                   className="text-sm underline"
                   style={{color: colors.dunesGrass}}
@@ -662,7 +648,7 @@ function BookingPage() {
             )}
 
             {range.from && (
-              <button 
+              <button
                 onClick={() => setRange({ from: null, to: null })}
                 className="mt-4 text-sm underline"
                 style={{color: colors.dunesGrass}}
@@ -712,13 +698,13 @@ function BookingPage() {
               >
                 {[1,2,3,4].map(n => <option key={n} value={n}>{n} guest{n > 1 ? 's' : ''}</option>)}
               </select>
-              
+
               {error && (
                 <div className="p-4 rounded-lg text-red-700" style={{backgroundColor: '#fee2e2'}}>
                   {error}
                 </div>
               )}
-              
+
               <button
                 type="submit"
                 disabled={nights === 0 || loading}
@@ -732,93 +718,49 @@ function BookingPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto">
-        {/* Main Footer */}
-        <div className="py-12 px-6 md:px-12" style={{backgroundColor: '#dfddd9'}}>
-          <div className="max-w-6xl mx-auto">
-            {/* Logo & Tagline */}
-            <div className="text-center mb-16">
-              <img 
-                src="https://hopfarmbeach.com/wp-content/uploads/2025/03/hfb-logo.png" 
-                alt="Hop Farm Beach" 
-                className="h-10 mx-auto mb-4" 
-              />
-              <p className="font-dreamers text-base tracking-widest uppercase" style={{color: colors.smoke}}>
-                Screens Off, Nature On
-              </p>
-            </div>
+      {/* Footer - matching main site exactly */}
+      <footer className="mt-auto py-16 md:py-20 px-6 md:px-16" style={{backgroundColor: colors.smoke, color: colors.stone}}>
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-16" style={{gridTemplateColumns: window.innerWidth >= 768 ? '2fr 1fr 1fr 1fr' : '1fr'}}>
+          {/* Brand */}
+          <div>
+            <img src="https://hopfarmbeach.com/images/stamp-round-sand.png" alt="Hop Farm Beach" className="h-24 md:h-28 mb-6" />
+            <p style={{color: colors.dunesGrass, fontSize: '0.95rem', lineHeight: '1.7'}}>A cabin on Sweden's Baltic coast.<br/>Part of Way Up North.</p>
+          </div>
 
-            {/* Three Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16 mb-10">
-              {/* Left: Navigation */}
-              <div className="text-center md:text-left space-y-2">
-                {[
-                  { name: 'Cabin', href: 'https://hopfarmbeach.com/cabin/' },
-                  { name: 'History', href: 'https://hopfarmbeach.com/history/' },
-                  { name: 'Gallery', href: 'https://hopfarmbeach.com/gallery/' },
-                  { name: 'Sustainability', href: 'https://hopfarmbeach.com/sustainability/' }
-                ].map(item => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="block text-xl font-medium transition-all duration-300 hover:underline hover:translate-x-2"
-                    style={{color: colors.smoke}}
-                  >
-                    {item.name}
-                  </a>
-                ))}
-              </div>
+          {/* Stay */}
+          <div>
+            <h4 className="font-dreamers text-xl md:text-2xl mb-5" style={{color: colors.sand}}>Stay</h4>
+            <a href="https://hopfarmbeach.com/" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Home</a>
+            <a href="https://hopfarmbeach.com/cabin" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>The Cabin</a>
+            <a href="https://hopfarmbeach.com/book" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Book Now</a>
+          </div>
 
-              {/* Center: Contact */}
-              <div className="text-center space-y-2">
-                <p className="text-xl font-bold mb-2" style={{color: colors.smoke}}>Contact</p>
-                <p className="text-lg" style={{color: colors.smoke}}>info@hopfarmbeach.com</p>
-                <p className="text-lg" style={{color: colors.smoke}}>+46 707314500</p>
-              </div>
+          {/* Learn */}
+          <div>
+            <h4 className="font-dreamers text-xl md:text-2xl mb-5" style={{color: colors.sand}}>Learn</h4>
+            <a href="https://hopfarmbeach.com/story" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Our Story</a>
+            <a href="https://hopfarmbeach.com/faq" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>FAQ</a>
+            <a href="https://hopfarmbeach.com/location" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Getting Here</a>
+          </div>
 
-              {/* Right: Social */}
-              <div className="text-center md:text-right space-y-2">
-                {[
-                  { name: 'Instagram', href: 'https://www.instagram.com/hopfarmbeach/' },
-                  { name: 'Facebook', href: 'https://www.facebook.com/hopfarmbeach' },
-                  { name: 'TikTok', href: 'https://www.tiktok.com/@hopfarmbeach' }
-                ].map(item => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-xl font-medium transition-all duration-300 hover:underline md:hover:-translate-x-2"
-                    style={{color: colors.smoke}}
-                  >
-                    {item.name}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t mb-4" style={{borderColor: '#75735f63'}} />
-
-            {/* Bottom Links - left aligned like main site */}
-            <div className="flex flex-wrap justify-start gap-x-4 gap-y-2 text-sm" style={{color: colors.smoke}}>
-              <a href="https://hopfarmbeach.com/cabin/faq/" className="hover:underline">FAQ</a>
-              <a href="https://hopfarmbeach.com/privacy-policy/" className="hover:underline">Privacy Policy</a>
-              <a href="https://hopfarmbeach.com/imprint/" className="hover:underline">Imprint</a>
-              <a href="https://hopfarmbeach.com/terms-conditions/" className="hover:underline">Terms & Conditions</a>
-            </div>
+          {/* Connect */}
+          <div>
+            <h4 className="font-dreamers text-xl md:text-2xl mb-5" style={{color: colors.sand}}>Connect</h4>
+            <a href="https://instagram.com/hopfarmbeach" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Instagram</a>
+            <a href="mailto:info@hopfarmbeach.com" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Contact</a>
+            <a href="https://hopfarmbeach.com/legal" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Legal</a>
           </div>
         </div>
 
-        {/* Copyright Bar */}
-        <div className="py-4 px-4 text-center text-sm" style={{backgroundColor: colors.dunesGrass, color: '#f3f1ed'}}>
-          Copyright Hop Farm Beach © 2026 - Web Design by Tom Robak
+        {/* Bottom */}
+        <div className="max-w-6xl mx-auto mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-2 text-sm" style={{borderTop: `1px solid ${colors.dunesGrass}`, color: colors.dunesGrass}}>
+          <span>© 2026 Hop Farm Beach</span>
+          <span>Humlegårdsstrand, Söderhamn</span>
         </div>
       </footer>
 
       {/* Rate Info Modal */}
-      <RateInfoModal 
+      <RateInfoModal
         isOpen={showRateInfo}
         onClose={() => setShowRateInfo(false)}
         nights={nights}
@@ -851,7 +793,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
 
   const handleClick = (day) => {
     if (!day || day < today || unavailableSet.has(formatDateLocal(day))) return
-    
+
     if (!range.from || (range.from && range.to)) {
       setRange({ from: day, to: null })
     } else {
@@ -876,8 +818,8 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
   return (
     <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
       <div className="flex items-center justify-between mb-6">
-        <button 
-          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} 
+        <button
+          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))}
           className="p-2 rounded-full transition-colors"
           style={{color: colors.smoke}}
         >
@@ -888,8 +830,8 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
         <span className="font-dreamers text-lg tracking-wider" style={{color: colors.smoke}}>
           {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
         </span>
-        <button 
-          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} 
+        <button
+          onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))}
           className="p-2 rounded-full transition-colors"
           style={{color: colors.smoke}}
         >
@@ -913,10 +855,10 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
           const isCheckOut = range.to && day.getTime() === range.to.getTime()
           const isSelected = isCheckIn || isCheckOut
           const inRange = isInRange(day)
-          
+
           let bgColor = 'transparent'
           let textColor = colors.smoke
-          
+
           if (isPast) {
             textColor = colors.sand
           } else if (isUnavail) {
@@ -931,7 +873,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
           } else if (inRange) {
             bgColor = colors.sand + '40'
           }
-          
+
           return (
             <button
               key={i}
@@ -955,7 +897,7 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
           )
         })}
       </div>
-      
+
       {/* Legend */}
       <div className="mt-4 pt-4 flex gap-4 text-xs" style={{borderTop: `1px solid ${colors.stone}`, color: colors.dunesGrass}}>
         <div className="flex items-center gap-1">
@@ -1200,11 +1142,11 @@ function AdminPage() {
 
   const createManualBooking = async (e) => {
     e.preventDefault()
-    const url = editingBooking 
+    const url = editingBooking
       ? `/api/admin/booking/${editingBooking.id}`
       : '/api/admin/booking'
     const method = editingBooking ? 'PUT' : 'POST'
-    
+
     const res = await fetch(url, {
       method,
       headers: authHeaders(),
@@ -1344,8 +1286,8 @@ function AdminPage() {
           className="w-full px-4 py-3 rounded-lg mb-4 border-0 outline-none"
           style={{backgroundColor: colors.stone, color: colors.smoke}}
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="w-full py-3 rounded-lg text-white font-medium"
           style={{backgroundColor: colors.smoke}}
         >
@@ -1480,8 +1422,8 @@ function AdminPage() {
       </header>
       <div style={{backgroundColor: 'white', borderBottom: `1px solid ${colors.sand}`}}>
         <div className="max-w-5xl mx-auto flex">
-          <button 
-            onClick={() => setTab('bookings')} 
+          <button
+            onClick={() => setTab('bookings')}
             className="px-6 py-4 font-medium"
             style={{
               borderBottom: tab === 'bookings' ? `2px solid ${colors.smoke}` : '2px solid transparent',
@@ -1490,8 +1432,8 @@ function AdminPage() {
           >
             Bookings
           </button>
-          <button 
-            onClick={() => setTab('calendar')} 
+          <button
+            onClick={() => setTab('calendar')}
             className="px-6 py-4 font-medium"
             style={{
               borderBottom: tab === 'calendar' ? `2px solid ${colors.smoke}` : '2px solid transparent',
@@ -1681,7 +1623,7 @@ function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-sm" style={{color: colors.smoke}}>{b.check_in} → {b.check_out}</td>
                     <td className="px-4 py-3">
-                      <span 
+                      <span
                         className="px-2 py-1 rounded text-xs font-medium"
                         style={{
                           backgroundColor: sourceColors[b.source] || colors.sand,
@@ -1695,7 +1637,7 @@ function AdminPage() {
                       {countryFlags[b.country] || ''}
                     </td>
                     <td className="px-4 py-3">
-                      <span 
+                      <span
                         className="px-2 py-1 rounded text-xs font-medium"
                         style={{
                           backgroundColor: b.status === 'confirmed' ? colors.dunesGrass : b.status === 'cancelled' ? '#991b1b' : colors.sand,
@@ -1735,8 +1677,8 @@ function AdminPage() {
         {tab === 'calendar' && (
           <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
             <div className="flex items-center justify-between mb-6">
-              <button 
-                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))} 
+              <button
+                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1))}
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >
@@ -1745,8 +1687,8 @@ function AdminPage() {
               <span className="font-dreamers tracking-wider" style={{color: colors.smoke}}>
                 {month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }).toUpperCase()}
               </span>
-              <button 
-                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))} 
+              <button
+                onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1))}
                 className="px-3 py-1 rounded"
                 style={{border: `1px solid ${colors.sand}`, color: colors.smoke}}
               >

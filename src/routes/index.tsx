@@ -126,7 +126,27 @@ function BookingPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+// Read URL parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const checkinParam = urlParams.get('checkin');
+      const checkoutParam = urlParams.get('checkout');
 
+      if (checkinParam && checkoutParam) {
+        const [inY, inM, inD] = checkinParam.split('-').map(Number);
+        const [outY, outM, outD] = checkoutParam.split('-').map(Number);
+        const checkInDate = new Date(inY, inM - 1, inD);
+        const checkOutDate = new Date(outY, outM - 1, outD);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (checkInDate >= today && checkOutDate > checkInDate) {
+          setSelectedRange({ from: checkInDate, to: checkOutDate });
+        }
+      }
+    }
+  }, []);
   const nights = selectedRange.from && selectedRange.to
     ? calculateNights(
         selectedRange.from.toISOString().split("T")[0],

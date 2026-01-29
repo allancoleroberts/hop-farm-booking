@@ -120,10 +120,25 @@ export const Route = createFileRoute("/")({
 function BookingPage() {
   const { unavailableDates, settings } = Route.useLoaderData();
   const navigate = useNavigate();
-  const [selectedRange, setSelectedRange] = useState<{ from: Date | null; to: Date | null }>({
-    from: null,
-    to: null,
-  });
+const [selectedRange, setSelectedRange] = useState<{ from: Date | null; to: Date | null }>(() => {
+      if (typeof window !== 'undefined') {
+              const urlParams = new URLSearchParams(window.location.search);
+              const checkinParam = urlParams.get('checkin');
+              const checkoutParam = urlParams.get('checkout');
+              if (checkinParam && checkoutParam) {
+                        const [inY, inM, inD] = checkinParam.split('-').map(Number);
+                        const [outY, outM, outD] = checkoutParam.split('-').map(Number);
+                        const checkInDate = new Date(inY, inM - 1, inD);
+                        const checkOutDate = new Date(outY, outM - 1, outD);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (checkInDate >= today && checkOutDate > checkInDate) {
+                                    return { from: checkInDate, to: checkOutDate };
+                        }
+              }
+      }
+      return { from: null, to: null };
+});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 // Read URL parameters on mount

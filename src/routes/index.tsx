@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/start";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { db } from "~/db";
 import { bookings, blockedDates, settings } from "~/db/schema";
 import { eq, and, gte, lte, or } from "drizzle-orm";
@@ -108,6 +108,10 @@ const createBooking = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/")({
   component: BookingPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    checkin: typeof search.checkin === 'string' ? search.checkin : undefined,
+    checkout: typeof search.checkout === 'string' ? search.checkout : undefined,
+  }),
   loader: async () => {
     const [unavailableDates, settings] = await Promise.all([
       getUnavailableDates(),
@@ -119,49 +123,28 @@ export const Route = createFileRoute("/")({
 
 function BookingPage() {
   const { unavailableDates, settings } = Route.useLoaderData();
+  const { checkin, checkout } = Route.useSearch();
   const navigate = useNavigate();
-const [selectedRange, setSelectedRange] = useState<{ from: Date | null; to: Date | null }>(() => {
-      if (typeof window !== 'undefined') {
-              const urlParams = new URLSearchParams(window.location.search);
-              const checkinParam = urlParams.get('checkin');
-              const checkoutParam = urlParams.get('checkout');
-              if (checkinParam && checkoutParam) {
-                        const [inY, inM, inD] = checkinParam.split('-').map(Number);
-                        const [outY, outM, outD] = checkoutParam.split('-').map(Number);
-                        const checkInDate = new Date(inY, inM - 1, inD);
-                        const checkOutDate = new Date(outY, outM - 1, outD);
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        if (checkInDate >= today && checkOutDate > checkInDate) {
-                                    return { from: checkInDate, to: checkOutDate };
-                        }
-              }
-      }
-      return { from: null, to: null };
-});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-// Read URL parameters on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const checkinParam = urlParams.get('checkin');
-      const checkoutParam = urlParams.get('checkout');
 
-      if (checkinParam && checkoutParam) {
-        const [inY, inM, inD] = checkinParam.split('-').map(Number);
-        const [outY, outM, outD] = checkoutParam.split('-').map(Number);
-        const checkInDate = new Date(inY, inM - 1, inD);
-        const checkOutDate = new Date(outY, outM - 1, outD);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (checkInDate >= today && checkOutDate > checkInDate) {
-          setSelectedRange({ from: checkInDate, to: checkOutDate });
-        }
+  // Parse URL search params into initial date range (SSR-safe via TanStack Router)
+  const [selectedRange, setSelectedRange] = useState<{ from: Date | null; to: Date | null }>(() => {
+    if (checkin && checkout) {
+      const [inY, inM, inD] = checkin.split('-').map(Number);
+      const [outY, outM, outD] = checkout.split('-').map(Number);
+      const checkInDate = new Date(inY, inM - 1, inD);
+      const checkOutDate = new Date(outY, outM - 1, outD);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (checkInDate >= today && checkOutDate > checkInDate) {
+        return { from: checkInDate, to: checkOutDate };
       }
     }
-  }, []);
+    return { from: null, to: null };
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const nights = selectedRange.from && selectedRange.to
     ? calculateNights(
         selectedRange.from.toISOString().split("T")[0],

@@ -61,6 +61,60 @@ app.use(cors({
 }));
 
 app.use(compression());
+
+// Stripe webhook needs raw body - must be before express.json()
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) return res.status(500).send('Stripe not configured');
+
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    if (webhookSecret) {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } else {
+      // Fallback for development - just parse the body
+      event = JSON.parse(req.body.toString());
+      console.warn('STRIPE_WEBHOOK_SECRET not set - webhook signature not verified');
+    }
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    console.log('Payment successful for session:', session.id);
+
+    // Find and update the booking
+    const booking = db.prepare('SELECT * FROM bookings WHERE stripe_session_id = ?').get(session.id);
+    if (booking && booking.status === 'pending') {
+      db.prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ?").run(booking.id);
+      console.log(`Booking ${booking.booking_ref} confirmed via webhook`);
+
+      // Send confirmation email
+      if (resend && booking.guest_email) {
+        try {
+          await resend.emails.send({
+            from: 'Hop Farm Beach <info@hopfarmbeach.com>',
+            to: booking.guest_email,
+            cc: 'info@hopfarmbeach.com',
+            subject: `Booking Confirmed - ${booking.booking_ref}`,
+            html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${booking.guest_name.split(' ')[0]},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br><span style="color: #32322B; font-size: 16px;">${booking.guests}</span></td></tr><tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr></table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We'll be in touch shortly with check-in details and directions to the cabin.</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a></p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`
+          });
+          console.log(`Confirmation email sent to ${booking.guest_email}`);
+        } catch (emailErr) {
+          console.error('Webhook email error:', emailErr);
+        }
+      }
+    }
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json());
 
 // Trust proxy (for Railway)
@@ -301,6 +355,32 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
 
     db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending')`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id);
+
+    // Send admin notification about new booking attempt
+    if (resend) {
+      try {
+        await resend.emails.send({
+          from: 'Hop Farm Beach <info@hopfarmbeach.com>',
+          to: 'info@hopfarmbeach.com',
+          subject: `New Booking Attempt - ${ref}`,
+          html: `<h2>New Booking Attempt</h2>
+            <p>Someone just started the checkout process:</p>
+            <ul>
+              <li><strong>Reference:</strong> ${ref}</li>
+              <li><strong>Guest:</strong> ${cleanName}</li>
+              <li><strong>Email:</strong> ${cleanEmail}</li>
+              <li><strong>Phone:</strong> ${cleanPhone || 'Not provided'}</li>
+              <li><strong>Dates:</strong> ${checkIn} to ${checkOut} (${nights} nights)</li>
+              <li><strong>Guests:</strong> ${guests}</li>
+              <li><strong>Total:</strong> SEK ${total.toLocaleString()}</li>
+            </ul>
+            <p>You'll receive another email when payment is confirmed.</p>
+            <p><a href="https://book.hopfarmbeach.com/admin">View in Admin</a></p>`
+        });
+      } catch (emailErr) {
+        console.error('Admin notification error:', emailErr);
+      }
+    }
 
     res.json({ url: session.url });
   } catch (err) {

@@ -189,12 +189,21 @@ function BookingPage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="py-8 px-4 text-center border-b border-stone-200">
-        <h1 className="font-dreamers text-4xl md:text-5xl text-forest mb-2">
-          Hop Farm Beach
-        </h1>
+        <a href="https://hopfarmbeach.com" className="inline-block">
+          <h1 className="font-dreamers text-4xl md:text-5xl text-forest mb-2">
+            Hop Farm Beach
+          </h1>
+        </a>
         <p className="text-stone-600 font-roobert">
           Forest. Beach. No WiFi.
         </p>
+        <nav className="mt-4 flex items-center justify-center gap-6 text-sm font-roobert text-stone-500">
+          <a href="https://hopfarmbeach.com/" className="hover:text-stone-800 transition-colors">Home</a>
+          <a href="https://hopfarmbeach.com/cabin" className="hover:text-stone-800 transition-colors">The Cabin</a>
+          <a href="https://hopfarmbeach.com/story" className="hover:text-stone-800 transition-colors">Our Story</a>
+          <a href="https://hopfarmbeach.com/faq" className="hover:text-stone-800 transition-colors">FAQ</a>
+          <a href="https://hopfarmbeach.com/elopement" className="hover:text-stone-800 transition-colors">Elopements</a>
+        </nav>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-12">

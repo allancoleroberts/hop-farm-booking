@@ -471,6 +471,7 @@ function BookingPage() {
           <a href="https://hopfarmbeach.com/cabin" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
           <a href="https://hopfarmbeach.com/story" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
           <a href="https://hopfarmbeach.com/faq" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
+          <a href="https://hopfarmbeach.com/elopement" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Elopements</a>
           <span className="px-5 py-3 rounded-sm font-medium" style={{backgroundColor: colors.sand, color: colors.smoke}}>Book Your Stay</span>
         </nav>
 
@@ -505,6 +506,7 @@ function BookingPage() {
             <a href="https://hopfarmbeach.com/cabin" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
             <a href="https://hopfarmbeach.com/story" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
             <a href="https://hopfarmbeach.com/faq" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
+            <a href="https://hopfarmbeach.com/elopement" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Elopements</a>
             <span className="mt-4 px-7 py-4 rounded-sm text-lg font-medium" style={{backgroundColor: colors.sand, color: colors.smoke}}>Book Your Stay</span>
           </nav>
         </div>
@@ -733,6 +735,7 @@ function BookingPage() {
             <a href="https://hopfarmbeach.com/" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Home</a>
             <a href="https://hopfarmbeach.com/cabin" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>The Cabin</a>
             <a href="https://hopfarmbeach.com/book" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Book Now</a>
+            <a href="https://hopfarmbeach.com/elopement" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Elopements</a>
           </div>
 
           {/* Learn */}

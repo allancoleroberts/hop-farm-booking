@@ -794,23 +794,47 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
     return days
   }
 
-  const handleClick = (day) => {
-    if (!day || day < today || unavailableSet.has(formatDateLocal(day))) return
-
-    if (!range.from || (range.from && range.to)) {
-      setRange({ from: day, to: null })
-    } else {
-      if (day <= range.from) {
-        setRange({ from: day, to: null })
-      } else {
-        let d = new Date(range.from)
-        while (d < day) {
-          if (unavailableSet.has(formatDateLocal(d))) return
-          d.setDate(d.getDate() + 1)
-        }
-        setRange({ ...range, to: day })
-      }
+  // A date is a valid check-out target if a check-in is already chosen and
+  // every NIGHT between check-in (inclusive) and this date (exclusive) is free.
+  // The first booked date AFTER your check-in is still a legitimate check-out
+  // because the next guest doesn't arrive until later that day (turnover day).
+  const canBeCheckOut = (day) => {
+    if (!day || !range.from || range.to) return false
+    if (day <= range.from) return false
+    let d = new Date(range.from)
+    while (d < day) {
+      if (unavailableSet.has(formatDateLocal(d))) return false
+      d.setDate(d.getDate() + 1)
     }
+    return true
+  }
+
+  const handleClick = (day) => {
+    if (!day || day < today) return
+
+    const dayUnavail = unavailableSet.has(formatDateLocal(day))
+
+    // Selecting check-out for an existing check-in
+    if (range.from && !range.to) {
+      if (day <= range.from) {
+        // Restarting check-in: must be a valid (available) check-in date
+        if (dayUnavail) return
+        setRange({ from: day, to: null })
+        return
+      }
+      // Validate every night between check-in (inclusive) and check-out (exclusive)
+      let d = new Date(range.from)
+      while (d < day) {
+        if (unavailableSet.has(formatDateLocal(d))) return
+        d.setDate(d.getDate() + 1)
+      }
+      setRange({ ...range, to: day })
+      return
+    }
+
+    // Starting a fresh selection (check-in): cannot be a booked night
+    if (dayUnavail) return
+    setRange({ from: day, to: null })
   }
 
   const isInRange = (day) => {
@@ -858,12 +882,17 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
           const isCheckOut = range.to && day.getTime() === range.to.getTime()
           const isSelected = isCheckIn || isCheckOut
           const inRange = isInRange(day)
+          // A booked date that's still clickable as today's check-out (turnover day)
+          const canCheckOut = isUnavail && !isPast && !isSelected && canBeCheckOut(day)
 
           let bgColor = 'transparent'
           let textColor = colors.smoke
 
           if (isPast) {
             textColor = colors.sand
+          } else if (canCheckOut) {
+            bgColor = colors.stone
+            textColor = colors.smoke
           } else if (isUnavail) {
             bgColor = colors.stone
             textColor = colors.sand
@@ -881,17 +910,17 @@ function Calendar({ month, setMonth, unavailable, range, setRange, selectionStat
             <button
               key={i}
               onClick={() => handleClick(day)}
-              disabled={isPast || isUnavail}
-              className={`aspect-square rounded-lg text-sm font-medium transition-all duration-150 ${isUnavail ? 'line-through' : ''}`}
+              disabled={isPast || (isUnavail && !canCheckOut)}
+              className={`aspect-square rounded-lg text-sm font-medium transition-all duration-150 ${isUnavail && !canCheckOut ? 'line-through' : ''}`}
               style={{ backgroundColor: bgColor, color: textColor }}
               onMouseEnter={(e) => {
-                if (!isPast && !isUnavail && !isSelected && !inRange) {
+                if (!isPast && !isSelected && !inRange && (!isUnavail || canCheckOut)) {
                   e.target.style.backgroundColor = colors.sand + '30'
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isPast && !isUnavail && !isSelected && !inRange) {
-                  e.target.style.backgroundColor = 'transparent'
+                if (!isPast && !isSelected && !inRange && (!isUnavail || canCheckOut)) {
+                  e.target.style.backgroundColor = canCheckOut ? colors.stone : 'transparent'
                 }
               }}
             >

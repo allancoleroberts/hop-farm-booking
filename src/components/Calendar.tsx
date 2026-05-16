@@ -12,7 +12,6 @@ interface CalendarProps {
 export function Calendar({ unavailableDates, selectedRange, onSelect, minNights }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingTo, setSelectingTo] = useState(false);
-
   const unavailableSet = new Set(unavailableDates);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -23,18 +22,9 @@ export function Calendar({ unavailableDates, selectedRange, onSelect, minNights 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const days: (Date | null)[] = [];
-
-    // Add empty slots for days before the first day (starting from Monday)
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    for (let i = 0; i < startDay; i++) {
-      days.push(null);
-    }
-
-    // Add all days of the month
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-      days.push(new Date(year, month, i));
-    }
-
+    for (let i = 0; i < startDay; i++) days.push(null);
+    for (let i = 1; i <= lastDay.getDate(); i++) days.push(new Date(year, month, i));
     return days;
   };
 
@@ -43,9 +33,7 @@ export function Calendar({ unavailableDates, selectedRange, onSelect, minNights 
     return unavailableSet.has(dateStr);
   };
 
-  const isDatePast = (date: Date) => {
-    return date < today;
-  };
+  const isDatePast = (date: Date) => date < today;
 
   const isDateInRange = (date: Date) => {
     if (!selectedRange.from || !selectedRange.to) return false;
@@ -58,43 +46,55 @@ export function Calendar({ unavailableDates, selectedRange, onSelect, minNights 
     return false;
   };
 
-  const handleDateClick = (date: Date) => {
-    if (isDatePast(date) || isDateUnavailable(date)) return;
-
-    if (!selectedRange.from || (selectedRange.from && selectedRange.to)) {
-      // Start new selection
-      onSelect({ from: date, to: null });
-      setSelectingTo(true);
-    } else if (selectingTo) {
-      // Complete selection
-      if (date <= selectedRange.from) {
-        // If clicked date is before or same as start, restart
-        onSelect({ from: date, to: null });
-      } else {
-        // Check if any dates in range are unavailable
-        const checkDate = new Date(selectedRange.from);
-        while (checkDate < date) {
-          if (isDateUnavailable(checkDate)) {
-            // Can't select this range
-            return;
-          }
-          checkDate.setDate(checkDate.getDate() + 1);
-        }
-        onSelect({ from: selectedRange.from, to: date });
-        setSelectingTo(false);
-      }
+  // A date is a valid check-out target if check-in is already chosen and every
+  // NIGHT between check-in (inclusive) and this date (exclusive) is free.
+  // This means the first booked date AFTER your check-in is still a legitimate
+  // check-out, because the new guest doesn't arrive until later that day.
+  const isCheckOutCandidate = (date: Date) => {
+    if (!selectingTo || !selectedRange.from || selectedRange.to) return false;
+    if (date <= selectedRange.from) return false;
+    const check = new Date(selectedRange.from);
+    while (check < date) {
+      if (isDateUnavailable(check)) return false;
+      check.setDate(check.getDate() + 1);
     }
+    return true;
+  };
+
+  const handleDateClick = (date: Date) => {
+    if (isDatePast(date)) return;
+
+    // Selecting check-out for an existing check-in
+    if (selectingTo && selectedRange.from && !selectedRange.to) {
+      if (date <= selectedRange.from) {
+        // Earlier or same day clicked: restart selection. Must be a valid check-in (not booked).
+        if (isDateUnavailable(date)) return;
+        onSelect({ from: date, to: null });
+        return;
+      }
+      // Validate every NIGHT between check-in (inclusive) and check-out (exclusive)
+      const checkDate = new Date(selectedRange.from);
+      while (checkDate < date) {
+        if (isDateUnavailable(checkDate)) return;
+        checkDate.setDate(checkDate.getDate() + 1);
+      }
+      onSelect({ from: selectedRange.from, to: date });
+      setSelectingTo(false);
+      return;
+    }
+
+    // Starting a fresh selection (check-in): cannot be a booked night
+    if (isDateUnavailable(date)) return;
+    onSelect({ from: date, to: null });
+    setSelectingTo(true);
   };
 
   const days = getDaysInMonth(currentMonth);
 
-  const prevMonth = () => {
+  const prevMonth = () =>
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
+  const nextMonth = () =>
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
-  };
 
   return (
     <div className="bg-white rounded-xl border border-stone-200 p-4 md:p-6">
@@ -133,23 +133,24 @@ export function Calendar({ unavailableDates, selectedRange, onSelect, minNights 
           if (!day) {
             return <div key={i} className="aspect-square" />;
           }
-
           const isPast = isDatePast(day);
           const isUnavailable = isDateUnavailable(day);
           const isSelected = isDateSelected(day);
           const isInRange = isDateInRange(day);
           const isCheckIn = selectedRange.from && day.getTime() === selectedRange.from.getTime();
           const isCheckOut = selectedRange.to && day.getTime() === selectedRange.to.getTime();
+          const checkOutOnly = isUnavailable && !isPast && isCheckOutCandidate(day);
 
           return (
             <button
               key={i}
               onClick={() => handleDateClick(day)}
-              disabled={isPast || isUnavailable}
+              disabled={isPast || (isUnavailable && !checkOutOnly)}
               className={cn(
                 "aspect-square rounded-lg flex items-center justify-center text-sm transition-all relative",
                 isPast && "text-stone-300 cursor-not-allowed",
-                isUnavailable && !isPast && "bg-stone-100 text-stone-400 cursor-not-allowed line-through",
+                isUnavailable && !isPast && !checkOutOnly && "bg-stone-100 text-stone-400 cursor-not-allowed line-through",
+                checkOutOnly && !isSelected && "bg-stone-100 text-stone-600 hover:bg-forest/10 cursor-pointer",
                 !isPast && !isUnavailable && !isSelected && !isInRange && "hover:bg-forest/10 text-stone-700",
                 isInRange && "bg-forest/10",
                 isSelected && "bg-forest text-white font-medium",

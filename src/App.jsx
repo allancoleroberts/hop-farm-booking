@@ -335,7 +335,8 @@ function RateInfoModal({ isOpen, onClose, nights, nightlyRate, total }) {
           <h3 className="font-medium mb-3" style={{ color: colors.smoke }}>Amenities</h3>
           <p className="text-sm mb-6" style={{ color: colors.dunesGrass }}>
             Air conditioned, Heated floors, Linen & Towels provided, Electric sauna,
-            Kitchenette with stovetop, Tea/Coffee maker, Bluetooth radio, Private deck,
+            Wood-fired outdoor shower, Cold outdoor shower, Kitchenette with stovetop,
+            Tea/Coffee maker, Record player with Bluetooth, Private deck,
             Phone lockbox for digital detox
           </p>
 
@@ -532,7 +533,7 @@ function BookingPage() {
                 <span>🚿 1 Bathroom</span>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Private deck'].map(item => (
+                {['32m²', 'No WiFi', 'No TV', 'Sauna', 'Wood-fired shower', 'Cold shower', 'Heated floors', 'Air conditioning', 'Kitchenette', 'Record player', 'Private deck'].map(item => (
                   <span key={item} className="px-2 py-1 rounded text-xs" style={{backgroundColor: colors.stone, color: colors.smoke}}>
                     {item}
                   </span>
@@ -543,9 +544,9 @@ function BookingPage() {
                 <div className="text-sm space-y-3" style={{color: colors.smoke}}>
                   <p>32 square metres. Two double beds. Floor-to-ceiling windows facing forest. Everything works, nothing extra.</p>
                   <p>Designed by Danish architect Mette Fredskild. Built for people who want less stuff and more space to think.</p>
-                  <p><strong>What's included:</strong> Sliding door for private bedroom, heated floors throughout, air conditioning, towels & bed linen, radio with Bluetooth, board games, phone lockbox for digital detox.</p>
+                  <p><strong>What's included:</strong> Sliding door for private bedroom, heated floors throughout, air conditioning, towels & bed linen, record player with vinyl and Bluetooth, board games, phone lockbox for digital detox.</p>
                   <p><strong>Kitchenette:</strong> Electric stovetop, kettle, toaster, coffee maker. Fresh drinkable tap water.</p>
-                  <p><strong>Outside:</strong> Private deck, parking, and sauna ready when you are.</p>
+                  <p><strong>Outside:</strong> Private deck, wood-fired outdoor shower, cold outdoor shower, parking, and sauna ready when you are.</p>
                   <button
                     onClick={() => setShowCabinInfo(false)}
                     className="underline mt-2"

@@ -721,6 +721,18 @@ app.get('/api/admin/backup/download', requireAuth, (req, res) => {
     res.status(500).json({ error: 'Failed to create backup' });
   }
 });
+// Download a specific backup file
+app.get('/api/admin/backup/download/:filename', requireAuth, (req, res) => {
+  const filename = req.params.filename;
+  if (!filename.endsWith('.db') || filename.includes('..') || filename.includes('/')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filePath = join(backupDir, filename);
+  if (!existsSync(filePath)) {
+    return res.status(404).json({ error: 'Backup not found' });
+  }
+  res.download(filePath, filename);
+});
 // Restore from backup
 app.post('/api/admin/restore', requireAuth, (req, res) => {
   const { backup } = req.body;

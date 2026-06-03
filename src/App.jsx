@@ -417,6 +417,20 @@ function BookingPage() {
 
   const selectionState = !range.from ? 'check-in' : !range.to ? 'check-out' : 'complete'
 
+  const captureLead = () => {
+    if (!form.email || !form.email.includes('@') || !form.email.includes('.')) return
+    fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guestName: form.name,
+        guestEmail: form.email,
+        guestPhone: form.phone,
+        guests: form.guests
+      })
+    }).catch(() => {})
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!range.from || !range.to) return setError('Select dates first')
@@ -684,6 +698,7 @@ function BookingPage() {
                 onChange={e => setForm({...form, email: e.target.value})}
                 className="w-full px-4 py-4 rounded-lg border-0 outline-none"
                 style={{backgroundColor: 'white', color: colors.smoke}}
+                onBlur={captureLead}
               />
               <input
                 type="tel"
@@ -1273,7 +1288,6 @@ function AdminPage() {
 
   const restoreBackup = async (backupName) => {
     if (!confirm(`Restore from backup: ${backupName}?\n\nThis will replace ALL current data!`)) return
-
     setRestoring(true)
     try {
       const res = await fetch('/api/admin/restore', {

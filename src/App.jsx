@@ -1072,6 +1072,8 @@ function AdminPage() {
   const [backups, setBackups] = useState([])
   const [backupLoading, setBackupLoading] = useState(false)
   const [restoring, setRestoring] = useState(false)
+  const [leads, setLeads] = useState([])
+  const [leadsLoading, setLeadsLoading] = useState(false)
 
   // Check for existing token on mount
   useEffect(() => {
@@ -1265,6 +1267,21 @@ function AdminPage() {
       console.error('Load backups error:', err)
     }
   }
+
+  const loadLeads = async () => {
+    setLeadsLoading(true)
+    try {
+      const res = await fetch('/api/admin/leads', { headers: authHeaders() })
+      if (res.ok) setLeads(await res.json())
+    } catch (e) {
+      console.error('Load leads error:', e)
+    }
+    setLeadsLoading(false)
+  }
+
+  useEffect(() => {
+    if (tab === 'leads') loadLeads()
+  }, [tab])
 
   const createBackup = async () => {
     setBackupLoading(true)
@@ -1478,6 +1495,16 @@ function AdminPage() {
             }}
           >
             Bookings
+          </button>
+          <button
+            onClick={() => setTab('leads')}
+            className="px-6 py-4 font-medium"
+            style={{
+              borderBottom: tab === 'leads' ? `2px solid ${colors.smoke}` : '2px solid transparent',
+              color: tab === 'leads' ? colors.smoke : colors.dunesGrass
+            }}
+          >
+            Leads
           </button>
           <button
             onClick={() => setTab('calendar')}
@@ -1848,6 +1875,62 @@ function AdminPage() {
             <p className="text-xs mt-4" style={{color: colors.dunesGrass}}>
               To get your iCal URL: Google Calendar → Settings → [Your Calendar] → Integrate calendar → Secret address in iCal format
             </p>
+          </div>
+        )}
+        {tab === 'leads' && (
+          <div className="rounded-lg p-6" style={{backgroundColor: 'white'}}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="font-medium" style={{color: colors.smoke}}>Captured Leads</h3>
+                <p className="text-xs mt-1" style={{color: colors.dunesGrass}}>
+                  {leads.length} total · {leads.filter(l => l.converted).length} converted
+                </p>
+              </div>
+              <button
+                onClick={loadLeads}
+                disabled={leadsLoading}
+                className="px-4 py-2 rounded text-white font-medium disabled:opacity-50"
+                style={{backgroundColor: colors.smoke}}
+              >
+                {leadsLoading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+
+            {leads.length === 0 ? (
+              <p className="text-sm" style={{color: colors.dunesGrass}}>
+                No leads captured yet. When guests type their email on the booking page and click elsewhere without finishing, their info will appear here.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {leads.map(lead => (
+                  <div key={lead.id} className="flex items-center justify-between p-3 rounded" style={{backgroundColor: colors.stone}}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <a href={`mailto:${lead.guest_email}`} className="font-medium hover:underline" style={{color: colors.smoke}}>
+                          {lead.guest_email}
+                        </a>
+                        {lead.converted ? (
+                          <span className="text-xs px-2 py-0.5 rounded" style={{backgroundColor: '#16a34a', color: 'white'}}>
+                            Converted
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded" style={{backgroundColor: colors.dunesGrass, color: 'white'}}>
+                            Open
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs mt-1" style={{color: colors.dunesGrass}}>
+                        {lead.guest_name ? lead.guest_name : 'No name'}
+                        {lead.guest_phone ? ` · ${lead.guest_phone}` : ''}
+                        {lead.check_in && lead.check_out ? ` · ${lead.check_in} → ${lead.check_out}` : ''}
+                        {' · '}
+                        {new Date(lead.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {tab === 'backup' && (

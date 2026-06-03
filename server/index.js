@@ -21,8 +21,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 // Resend setup
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY) 
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
 const app = express();
@@ -93,6 +93,11 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
     if (booking && booking.status === 'pending') {
       db.prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ?").run(booking.id);
       console.log(`Booking ${booking.booking_ref} confirmed via webhook`);
+
+      // Mark any matching leads as converted
+      if (booking.guest_email) {
+        db.prepare('UPDATE leads SET converted = 1 WHERE guest_email = ? AND converted = 0').run(booking.guest_email);
+      }
 
       // Send confirmation email
       if (resend && booking.guest_email) {
@@ -186,6 +191,17 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guest_name TEXT,
+    guest_email TEXT NOT NULL,
+    guest_phone TEXT,
+    check_in TEXT,
+    check_out TEXT,
+    guests INTEGER,
+    converted INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
   INSERT OR IGNORE INTO settings (key, value) VALUES ('nightly_rate', '3495');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('min_nights', '1');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('max_guests', '4');
@@ -200,8 +216,8 @@ try {
   db.exec(`ALTER TABLE bookings ADD COLUMN country TEXT`);
 } catch (e) {}
 
-const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY) 
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
 
 function generateRef() {
@@ -228,7 +244,7 @@ function isValidEmail(email) {
 function isDateAvailable(checkIn, checkOut) {
   const blocked = db.prepare('SELECT date FROM blocked_dates').all().map(r => r.date);
   const bookings = db.prepare("SELECT check_in, check_out FROM bookings WHERE status = 'confirmed'").all();
-  
+
   const unavailable = new Set(blocked);
   for (const b of bookings) {
     const [inY, inM, inD] = b.check_in.split('-').map(Number);
@@ -241,7 +257,7 @@ function isDateAvailable(checkIn, checkOut) {
       d.setDate(d.getDate() + 1);
     }
   }
-  
+
   const [inY, inM, inD] = checkIn.split('-').map(Number);
   const [outY, outM, outD] = checkOut.split('-').map(Number);
   let d = new Date(inY, inM - 1, inD);
@@ -259,7 +275,7 @@ function requireAuth(req, res, next) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  
+
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -283,7 +299,7 @@ app.get('/api/settings', (req, res) => {
 app.get('/api/unavailable', (req, res) => {
   const blocked = db.prepare('SELECT date FROM blocked_dates').all().map(r => r.date);
   const bookings = db.prepare("SELECT check_in, check_out FROM bookings WHERE status = 'confirmed'").all();
-  
+
   const unavailable = new Set(blocked);
   for (const b of bookings) {
     const [inY, inM, inD] = b.check_in.split('-').map(Number);
@@ -299,34 +315,72 @@ app.get('/api/unavailable', (req, res) => {
   res.json([...unavailable]);
 });
 
+// Capture a lead from the booking form (called on email blur)
+app.post('/api/lead', apiLimiter, (req, res) => {
+  try {
+    const { guestName, guestEmail, guestPhone, checkIn, checkOut, guests } = req.body;
+    const cleanEmail = sanitize(guestEmail);
+
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      return res.json({ ok: false });
+    }
+
+    // Dedup: skip if same email captured in the last day
+    const recent = db.prepare(`
+      SELECT id FROM leads
+      WHERE guest_email = ?
+      AND datetime(created_at) > datetime('now', '-1 day')
+    `).get(cleanEmail);
+
+    if (recent) return res.json({ ok: true, deduped: true });
+
+    db.prepare(`
+      INSERT INTO leads (guest_name, guest_email, guest_phone, check_in, check_out, guests)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      sanitize(guestName) || null,
+      cleanEmail,
+      sanitize(guestPhone) || null,
+      checkIn || null,
+      checkOut || null,
+      parseInt(guests) || null
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Lead capture error:', err);
+    res.json({ ok: false });
+  }
+});
+
 app.post('/api/checkout', checkoutLimiter, async (req, res) => {
   if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
-  
+
   const { guestName, guestEmail, guestPhone, checkIn, checkOut, guests } = req.body;
-  
+
   const errors = [];
   const maxGuests = parseInt(getSetting('max_guests') || '4');
-  
+
   const cleanName = sanitize(guestName);
   const cleanEmail = sanitize(guestEmail);
   const cleanPhone = sanitize(guestPhone);
-  
+
   if (!cleanName || cleanName.length < 2) errors.push('Valid name is required');
   if (!cleanEmail || !isValidEmail(cleanEmail)) errors.push('Valid email is required');
   if (!guests || guests < 1 || guests > maxGuests) errors.push(`Guest count must be between 1 and ${maxGuests}`);
   if (!checkIn || !checkOut) errors.push('Check-in and check-out dates are required');
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
-  
+
   if (checkInDate < today) errors.push('Cannot book past dates');
   if (checkOutDate <= checkInDate) errors.push('Check-out must be after check-in');
   if (checkIn && checkOut && !isDateAvailable(checkIn, checkOut)) errors.push('Selected dates are not available');
-  
+
   if (errors.length > 0) return res.status(400).json({ error: errors.join(', ') });
-  
+
   const rate = parseInt(getSetting('nightly_rate') || '3495');
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
   const total = nights * rate;
@@ -391,10 +445,10 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
 
 app.get('/api/confirm', async (req, res) => {
   if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
-  
+
   const { session_id } = req.query;
   if (!session_id) return res.status(400).json({ error: 'Session ID required' });
-  
+
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
     if (session.payment_status !== 'paid') return res.status(400).json({ error: 'Payment not completed' });
@@ -404,7 +458,12 @@ app.get('/api/confirm', async (req, res) => {
 
     if (booking.status === 'pending') {
       db.prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ?").run(booking.id);
-      
+
+      // Mark any matching leads as converted
+      if (booking.guest_email) {
+        db.prepare('UPDATE leads SET converted = 1 WHERE guest_email = ? AND converted = 0').run(booking.guest_email);
+      }
+
       if (resend) {
         try {
           await resend.emails.send({
@@ -452,6 +511,12 @@ app.get('/api/admin/bookings', requireAuth, (req, res) => {
   res.json(bookings);
 });
 
+// View captured leads
+app.get('/api/admin/leads', requireAuth, (req, res) => {
+  const leads = db.prepare('SELECT * FROM leads ORDER BY created_at DESC').all();
+  res.json(leads);
+});
+
 app.get('/api/admin/blocked', requireAuth, (req, res) => {
   const blocked = db.prepare('SELECT date FROM blocked_dates').all().map(r => r.date);
   res.json(blocked);
@@ -460,7 +525,7 @@ app.get('/api/admin/blocked', requireAuth, (req, res) => {
 app.post('/api/admin/block', requireAuth, (req, res) => {
   const { date, block } = req.body;
   if (!date) return res.status(400).json({ error: 'Date required' });
-  
+
   if (block) {
     db.prepare('INSERT OR IGNORE INTO blocked_dates (date) VALUES (?)').run(date);
   } else {
@@ -472,7 +537,7 @@ app.post('/api/admin/block', requireAuth, (req, res) => {
 app.post('/api/admin/cancel', requireAuth, (req, res) => {
   const { id } = req.body;
   if (!id) return res.status(400).json({ error: 'Booking ID required' });
-  
+
   db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?").run(id);
   res.json({ success: true });
 });
@@ -480,24 +545,24 @@ app.post('/api/admin/cancel', requireAuth, (req, res) => {
 // Manual booking creation (for Booking.com, Airbnb, etc.)
 app.post('/api/admin/booking', requireAuth, (req, res) => {
   const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
-  
+
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
   }
-  
+
   const cleanName = sanitize(guestName);
   const cleanSource = sanitize(source) || 'manual';
   const cleanCountry = sanitize(country) || null;
   const ref = generateRef();
-  
+
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-  
+
   try {
     db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, country, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry);
-    
+
     res.json({ success: true, booking_ref: ref });
   } catch (err) {
     console.error('Manual booking error:', err);
@@ -509,23 +574,23 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
 app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
   const { id } = req.params;
   const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
-  
+
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
   }
-  
+
   const cleanName = sanitize(guestName);
   const cleanSource = sanitize(source) || 'manual';
   const cleanCountry = sanitize(country) || null;
-  
+
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-  
+
   try {
     db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ? WHERE id = ?`)
       .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, id);
-    
+
     res.json({ success: true });
   } catch (err) {
     console.error('Edit booking error:', err);
@@ -552,31 +617,31 @@ app.post('/api/admin/sync', requireAuth, async (req, res) => {
   if (!icalUrl) {
     return res.status(400).json({ error: 'No iCal URL configured' });
   }
-  
+
   try {
     const response = await fetch(icalUrl);
     if (!response.ok) throw new Error('Failed to fetch calendar');
-    
+
     const icalData = await response.text();
     const events = parseIcal(icalData);
-    
+
     let synced = 0;
     for (const event of events) {
       // Check if this event is already in bookings (by date range and source)
       const existing = db.prepare(
         "SELECT id FROM bookings WHERE check_in = ? AND check_out = ? AND source = 'gcal'"
       ).get(event.checkIn, event.checkOut);
-      
+
       if (!existing) {
         const ref = generateRef();
         const nights = Math.ceil((new Date(event.checkOut) - new Date(event.checkIn)) / (1000 * 60 * 60 * 24));
-        
+
         db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, status)
           VALUES (?, ?, '', ?, ?, ?, 2, 0, 'gcal', 'confirmed')`).run(ref, event.summary || 'Calendar Block', event.checkIn, event.checkOut, nights);
         synced++;
       }
     }
-    
+
     res.json({ success: true, synced, total: events.length });
   } catch (err) {
     console.error('Calendar sync error:', err);
@@ -590,13 +655,13 @@ function parseIcal(data) {
   const lines = data.split(/\r?\n/);
   let inEvent = false;
   let event = {};
-  
+
   for (let line of lines) {
     // Handle line continuation
     if (line.startsWith(' ') || line.startsWith('\t')) {
       continue;
     }
-    
+
     if (line === 'BEGIN:VEVENT') {
       inEvent = true;
       event = {};
@@ -634,7 +699,7 @@ function parseIcal(data) {
       }
     }
   }
-  
+
   return events;
 }
 
@@ -701,26 +766,7 @@ app.get('/api/admin/backups', requireAuth, (req, res) => {
     res.json([]);
   }
 });
-// Download a fresh backup directly to the caller's machine
-app.get('/api/admin/backup/download', requireAuth, (req, res) => {
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const tempPath = join(backupDir, `download-${timestamp}.db`);
 
-    // Close DB cleanly so the file is consistent
-    db.close();
-    copyFileSync(dbPath, tempPath);
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-
-    res.download(tempPath, `bookings-backup-${timestamp}.db`, () => {
-      try { unlinkSync(tempPath); } catch (e) {}
-    });
-  } catch (err) {
-    console.error('Download backup error:', err);
-    res.status(500).json({ error: 'Failed to create backup' });
-  }
-});
 // Download a specific backup file
 app.get('/api/admin/backup/download/:filename', requireAuth, (req, res) => {
   const filename = req.params.filename;
@@ -733,6 +779,7 @@ app.get('/api/admin/backup/download/:filename', requireAuth, (req, res) => {
   }
   res.download(filePath, filename);
 });
+
 // Restore from backup
 app.post('/api/admin/restore', requireAuth, (req, res) => {
   const { backup } = req.body;

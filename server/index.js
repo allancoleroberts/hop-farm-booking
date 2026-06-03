@@ -701,7 +701,26 @@ app.get('/api/admin/backups', requireAuth, (req, res) => {
     res.json([]);
   }
 });
+// Download a fresh backup directly to the caller's machine
+app.get('/api/admin/backup/download', requireAuth, (req, res) => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const tempPath = join(backupDir, `download-${timestamp}.db`);
 
+    // Close DB cleanly so the file is consistent
+    db.close();
+    copyFileSync(dbPath, tempPath);
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+
+    res.download(tempPath, `bookings-backup-${timestamp}.db`, () => {
+      try { unlinkSync(tempPath); } catch (e) {}
+    });
+  } catch (err) {
+    console.error('Download backup error:', err);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
 // Restore from backup
 app.post('/api/admin/restore', requireAuth, (req, res) => {
   const { backup } = req.body;

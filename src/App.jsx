@@ -1332,6 +1332,7 @@ function AdminPage() {
     'airbnb': '#FF5A5F',
     'vrbo': '#3D67FF',
     'campanyon': '#2D5A27',
+    'landfolk': '#D85D3F',
     'admin': colors.smoke,
     'gcal': '#4285F4',
     'manual': colors.sand
@@ -1578,6 +1579,7 @@ function AdminPage() {
                       <option value="airbnb">Airbnb</option>
                       <option value="vrbo">VRBO</option>
                       <option value="campanyon">Campanyon</option>
+                      <option value="landfolk">Landfolk</option>
                       <option value="admin">Admin Block</option>
                       <option value="manual">Manual / Phone</option>
                     </select>

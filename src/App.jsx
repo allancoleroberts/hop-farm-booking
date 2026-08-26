@@ -1064,7 +1064,7 @@ function AdminPage() {
   const [month, setMonth] = useState(new Date())
   const [showAddBooking, setShowAddBooking] = useState(false)
   const [editingBooking, setEditingBooking] = useState(null)
-  const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' })
+  const [newBooking, setNewBooking] = useState({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '', totalAmount: '' })
   const [icalUrl, setIcalUrl] = useState('')
   const [syncing, setSyncing] = useState(false)
   const [sortBy, setSortBy] = useState('checkIn')
@@ -1216,7 +1216,7 @@ function AdminPage() {
     if (res.ok) {
       setShowAddBooking(false)
       setEditingBooking(null)
-      setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '' })
+      setNewBooking({ guestName: '', checkIn: '', checkOut: '', guests: 2, source: 'booking.com', notes: '', country: '', totalAmount: '' })
       loadData()
     } else {
       const data = await res.json()
@@ -1232,7 +1232,8 @@ function AdminPage() {
       guests: booking.guests,
       source: booking.source || 'manual',
       notes: booking.guest_email || '',
-      country: booking.country || ''
+      country: booking.country || '',
+      totalAmount: booking.total_amount || ''
     })
     setEditingBooking(booking)
     setShowAddBooking(true)
@@ -1427,6 +1428,18 @@ function AdminPage() {
   }
 
   const todayISO = new Date().toISOString().slice(0, 10)
+  // Money, worked out from whatever prices the bookings actually carry.
+  const kr = n => Math.round(Number(n) || 0).toLocaleString('sv-SE') + ' kr'
+  const live = bookings.filter(b => b.status !== 'cancelled')
+  const thisYear = String(new Date().getFullYear())
+  const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
+  const sumOf = list => list.reduce((tot, b) => tot + (Number(b.total_amount) || 0), 0)
+  const ytd = live.filter(b => (b.check_in || '').slice(0, 4) === thisYear)
+  const soon = live.filter(b => b.check_in >= todayISO && b.check_in <= in30)
+  const priced = live.filter(b => Number(b.total_amount) > 0)
+  const bySource = {}
+  live.forEach(b => { const s = b.source || 'direct'; bySource[s] = bySource[s] || { n: 0, v: 0 }; bySource[s].n++; bySource[s].v += Number(b.total_amount) || 0 })
+  const missingPrice = live.length - priced.length
   const visibleBookings = bookings.filter(b => {
     if (filterSource !== 'all' && (b.source || 'direct') !== filterSource) return false
     if (filterWhen === 'upcoming' && (b.check_out < todayISO || b.status === 'cancelled')) return false
@@ -1641,6 +1654,19 @@ function AdminPage() {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>What they paid (SEK)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={newBooking.totalAmount}
+                      onChange={e => setNewBooking({...newBooking, totalAmount: e.target.value})}
+                      placeholder="e.g. 3495"
+                      className="w-full px-3 py-2 rounded border-0"
+                      style={{backgroundColor: colors.stone, color: colors.smoke}}
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm mb-1" style={{color: colors.dunesGrass}}>Country</label>
                     <select
                       value={newBooking.country}
@@ -1682,6 +1708,26 @@ function AdminPage() {
                 </form>
               </div>
             )}
+          <div className="grid gap-3 mb-4" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))'}}>
+            {[
+              [thisYear + ' so far', ytd.length + ' stays', kr(sumOf(ytd))],
+              ['Next 30 days', soon.length + ' stays', kr(sumOf(soon))],
+              ['All time', live.length + ' stays', kr(sumOf(live))],
+              ['Average booking', priced.length + ' with a price', priced.length ? kr(sumOf(priced) / priced.length) : '\u2014']
+            ].map(c => (
+              <div key={c[0]} className="rounded-lg px-4 py-3" style={{backgroundColor: 'white'}}>
+                <div className="text-xs" style={{color: colors.dunesGrass}}>{c[0]}</div>
+                <div className="text-lg font-medium" style={{color: colors.smoke}}>{c[2]}</div>
+                <div className="text-xs" style={{color: colors.dunesGrass}}>{c[1]}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-4 mb-4 text-xs" style={{color: colors.dunesGrass}}>
+            {Object.entries(bySource).sort((a, b) => b[1].v - a[1].v).map(([s, d]) => (
+              <span key={s}>{s} <strong style={{color: colors.smoke}}>{kr(d.v)}</strong> ({d.n})</span>
+            ))}
+            {missingPrice > 0 && <span style={{color: '#991b1b'}}>{missingPrice} with no price yet</span>}
+          </div>
           <div className="flex flex-wrap gap-2 items-center mb-3">
             <input
               type="text"
@@ -1724,6 +1770,7 @@ function AdminPage() {
                   <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('country')}>
                     Country<SortIcon column="country" />
                   </th>
+                  <th className="px-4 py-3 font-medium text-right">Value</th>
                   <th className="px-4 py-3 font-medium cursor-pointer hover:bg-opacity-80 transition-colors" onClick={() => handleSort('status')}>
                     Status<SortIcon column="status" />
                   </th>
@@ -1733,7 +1780,7 @@ function AdminPage() {
               <tbody>
                 {sortedBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
+                    <td colSpan={8} className="px-4 py-8 text-center" style={{color: colors.dunesGrass}}>
                       No bookings yet
                     </td>
                   </tr>
@@ -1758,6 +1805,9 @@ function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-xl" title={b.country}>
                       {countryFlags[b.country] || ''}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right whitespace-nowrap" style={{color: Number(b.total_amount) ? colors.smoke : '#c2b8a6'}}>
+                      {Number(b.total_amount) ? Number(b.total_amount).toLocaleString('sv-SE') + ' kr' : '\u2014'}
                     </td>
                     <td className="px-4 py-3">
                       <span

@@ -625,6 +625,17 @@ app.post('/api/admin/cancel', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Remove a booking outright. Cancelling leaves the row in place, which is
+// right for a real guest and wrong for a test that should never have existed.
+app.delete('/api/admin/booking/:id', requireAuth, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Booking ID required' });
+  const row = db.prepare('SELECT booking_ref FROM bookings WHERE id = ?').get(id);
+  if (!row) return res.status(404).json({ error: 'No such booking' });
+  db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+  res.json({ success: true, ref: row.booking_ref });
+});
+
 // Manual booking creation (for Booking.com, Airbnb, etc.)
 app.post('/api/admin/booking', requireAuth, (req, res) => {
   const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;

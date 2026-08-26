@@ -638,7 +638,7 @@ app.delete('/api/admin/booking/:id', requireAuth, (req, res) => {
 
 // Manual booking creation (for Booking.com, Airbnb, etc.)
 app.post('/api/admin/booking', requireAuth, (req, res) => {
-  const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
+  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount } = req.body;
 
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
@@ -655,7 +655,7 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
 
   try {
     db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, country, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, Math.round(Number(totalAmount) || 0), cleanSource, cleanCountry);
 
     res.json({ success: true, booking_ref: ref });
   } catch (err) {
@@ -667,7 +667,7 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
 // Edit booking
 app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
   const { id } = req.params;
-  const { guestName, checkIn, checkOut, guests, source, notes, country } = req.body;
+  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount } = req.body;
 
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
@@ -682,8 +682,8 @@ app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
   try {
-    db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ? WHERE id = ?`)
-      .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, id);
+    db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ?, total_amount = ? WHERE id = ?`)
+      .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, Math.round(Number(totalAmount) || 0), id);
 
     res.json({ success: true });
   } catch (err) {

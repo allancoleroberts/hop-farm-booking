@@ -1439,7 +1439,8 @@ function AdminPage() {
   const sumOf = list => list.reduce((tot, b) => tot + (Number(b.total_amount) || 0), 0)
   const yearPaid = paid.filter(b => (b.check_in || '').slice(0, 4) === thisYear)
   const done = yearPaid.filter(b => b.check_out < todayISO)
-  const ahead = paid.filter(b => b.check_out >= todayISO)
+  const ahead = yearPaid.filter(b => b.check_out >= todayISO)
+  const later = paid.filter(b => (b.check_in || '').slice(0, 4) > thisYear)
   const soon = paid.filter(b => b.check_in >= todayISO && b.check_in <= in30)
   const priced = paid.filter(b => Number(b.total_amount) > 0)
   const bySource = {}
@@ -1716,7 +1717,7 @@ function AdminPage() {
           <div className="grid gap-3 mb-4" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))'}}>
             {[
               ['Earned in ' + thisYear, done.length + ' stays finished', kr(sumOf(done))],
-              ['Booked ahead', ahead.length + ' still to come', kr(sumOf(ahead))],
+              ['Still to come in ' + thisYear, ahead.length + ' stays', kr(sumOf(ahead))],
               [thisYear + ' in total', yearPaid.length + ' stays', kr(sumOf(yearPaid))],
               ['Average booking', priced.length + ' confirmed', priced.length ? kr(sumOf(priced) / priced.length) : '\u2014']
             ].map(c => (
@@ -1731,6 +1732,7 @@ function AdminPage() {
             {Object.entries(bySource).sort((a, b) => b[1].v - a[1].v).map(([s, d]) => (
               <span key={s}>{s} <strong style={{color: colors.smoke}}>{kr(d.v)}</strong> ({d.n})</span>
             ))}
+            {later.length > 0 && <span>{Number(thisYear) + 1} onwards <strong style={{color: colors.smoke}}>{kr(sumOf(later))}</strong> ({later.length})</span>}
             {held.length > 0 && <span>{held.length} unpaid holds, {kr(sumOf(held))}, not counted</span>}
             {missingPrice > 0 && <span style={{color: '#991b1b'}}>{missingPrice} with no price yet</span>}
           </div>

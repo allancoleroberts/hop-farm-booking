@@ -1074,6 +1074,9 @@ function AdminPage() {
   const [restoring, setRestoring] = useState(false)
   const [leads, setLeads] = useState([])
   const [leadsLoading, setLeadsLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [filterSource, setFilterSource] = useState('all')
+  const [filterWhen, setFilterWhen] = useState('upcoming')
 
   // Check for existing token on mount
   useEffect(() => {
@@ -1187,6 +1190,14 @@ function AdminPage() {
       headers: authHeaders(),
       body: JSON.stringify({ id })
     })
+    loadData()
+  }
+
+  // Cancelling leaves the row in place, which is right for a real guest and
+  // wrong for a test that should never have existed. This removes it outright.
+  const deleteBooking = async (id, ref) => {
+    if (!confirm('Delete ' + ref + ' for good? The record goes entirely and cannot be brought back.')) return
+    await fetch('/api/admin/booking/' + id, { method: 'DELETE', headers: authHeaders() })
     loadData()
   }
 
@@ -1415,7 +1426,18 @@ function AdminPage() {
     }
   }
 
-  const sortedBookings = [...bookings].sort((a, b) => {
+  const todayISO = new Date().toISOString().slice(0, 10)
+  const visibleBookings = bookings.filter(b => {
+    if (filterSource !== 'all' && (b.source || 'direct') !== filterSource) return false
+    if (filterWhen === 'upcoming' && (b.check_out < todayISO || b.status === 'cancelled')) return false
+    if (filterWhen === 'past' && (b.check_out >= todayISO || b.status === 'cancelled')) return false
+    if (filterWhen === 'cancelled' && b.status !== 'cancelled') return false
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return [b.guest_name, b.guest_email, b.booking_ref].filter(Boolean).join(' ').toLowerCase().indexOf(q) > -1
+  })
+
+  const sortedBookings = [...visibleBookings].sort((a, b) => {
     let aVal, bVal
 
     switch(sortBy) {
@@ -1660,6 +1682,31 @@ function AdminPage() {
                 </form>
               </div>
             )}
+          <div className="flex flex-wrap gap-2 items-center mb-3">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search name, email or reference"
+              className="px-3 py-2 rounded border-0 text-sm"
+              style={{backgroundColor: 'white', color: colors.smoke, flex: '1 1 220px', minWidth: '200px'}}
+            />
+            {[['upcoming','Upcoming'],['past','Past'],['cancelled','Cancelled'],['all','Everything']].map(o => (
+              <button key={o[0]} onClick={() => setFilterWhen(o[0])}
+                className="text-xs px-3 py-2 rounded transition-opacity hover:opacity-70"
+                style={{backgroundColor: filterWhen === o[0] ? colors.smoke : 'white', color: filterWhen === o[0] ? 'white' : colors.dunesGrass}}>
+                {o[1]}
+              </button>
+            ))}
+            {[['all','All sources'],['website','Website'],['booking.com','Booking.com'],['admin','Admin']].map(o => (
+              <button key={o[0]} onClick={() => setFilterSource(o[0])}
+                className="text-xs px-3 py-2 rounded transition-opacity hover:opacity-70"
+                style={{backgroundColor: filterSource === o[0] ? colors.sand : 'white', color: filterSource === o[0] ? 'white' : colors.dunesGrass}}>
+                {o[1]}
+              </button>
+            ))}
+            <span className="text-xs" style={{color: colors.dunesGrass}}>{sortedBookings.length} shown</span>
+          </div>
           <div className="rounded-lg overflow-hidden" style={{backgroundColor: 'white'}}>
             <table className="w-full">
               <thead style={{backgroundColor: colors.stone}}>
@@ -1724,24 +1771,29 @@ function AdminPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 flex gap-2">
+                      <button
+                        onClick={() => startEditBooking(b)}
+                        className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                        style={{backgroundColor: colors.stone, color: colors.smoke}}
+                      >
+                        Edit
+                      </button>
                       {b.status === 'confirmed' && (
-                        <>
-                          <button
-                            onClick={() => startEditBooking(b)}
-                            className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
-                            style={{backgroundColor: colors.stone, color: colors.smoke}}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => cancelBooking(b.id, b.booking_ref)}
-                            className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
-                            style={{backgroundColor: '#fee2e2', color: '#991b1b'}}
-                          >
-                            Cancel
-                          </button>
-                        </>
+                        <button
+                          onClick={() => cancelBooking(b.id, b.booking_ref)}
+                          className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                          style={{backgroundColor: '#fee2e2', color: '#991b1b'}}
+                        >
+                          Cancel
+                        </button>
                       )}
+                      <button
+                        onClick={() => deleteBooking(b.id, b.booking_ref)}
+                        className="text-xs px-2 py-1 rounded transition-opacity hover:opacity-70"
+                        style={{backgroundColor: 'transparent', color: '#991b1b', border: '1px solid #e6cccc'}}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

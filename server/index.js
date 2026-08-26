@@ -106,8 +106,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
             from: 'Hop Farm Beach <info@hopfarmbeach.com>',
             to: booking.guest_email,
             cc: 'info@hopfarmbeach.com',
-            subject: `Booking Confirmed - ${booking.booking_ref}`,
-            html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${booking.guest_name.split(' ')[0]},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br><span style="color: #32322B; font-size: 16px;">${booking.guests}</span></td></tr><tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr></table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We'll be in touch shortly with check-in details and directions to the cabin.</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a></p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`
+            subject: `${booking.product === SEA_TO_SKY ? 'Sea to Sky Confirmed' : 'Booking Confirmed'} - ${booking.booking_ref}`,
+            html: confirmationHtml(booking)
           });
           console.log(`Confirmation email sent to ${booking.guest_email}`);
         } catch (emailErr) {
@@ -206,6 +206,8 @@ db.exec(`
   INSERT OR IGNORE INTO settings (key, value) VALUES ('min_nights', '1');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('max_guests', '4');
   INSERT OR IGNORE INTO settings (key, value) VALUES ('ical_url', '');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('sea_to_sky_price', '13900');
+  INSERT OR IGNORE INTO settings (key, value) VALUES ('sea_to_sky_dates', '2026-10-18,2026-10-19,2026-10-20,2026-10-21,2026-10-22,2026-10-23,2026-10-24,2026-11-22,2026-11-23,2026-11-24,2026-11-25,2026-11-26,2026-11-27,2026-11-28,2026-12-06,2026-12-07,2026-12-08,2026-12-09,2026-12-10,2026-12-11,2026-12-12');
 `);
 
 // Add columns if they don't exist (migration for existing db)
@@ -214,6 +216,9 @@ try {
 } catch (e) {}
 try {
   db.exec(`ALTER TABLE bookings ADD COLUMN country TEXT`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE bookings ADD COLUMN product TEXT NOT NULL DEFAULT 'cabin'`);
 } catch (e) {}
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -270,6 +275,66 @@ function isDateAvailable(checkIn, checkOut) {
   return true;
 }
 
+// ---- Sea to Sky helpers -------------------------------------------------
+// Night one is at Hop Farm Beach, night two is at Bergaliv. Only the Hop Farm
+// Beach night occupies our calendar, so a booking is stored as a single night.
+const SEA_TO_SKY = 'sea-to-sky';
+
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+function seaToSkyDates() {
+  return (getSetting('sea_to_sky_dates') || '')
+    .split(',')
+    .map(d => d.trim())
+    .filter(Boolean);
+}
+
+function seaToSkyPrice() {
+  return parseInt(getSetting('sea_to_sky_price') || '13900');
+}
+
+function longDate(dateStr) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+function confirmationHtml(booking) {
+  const isSTS = booking.product === SEA_TO_SKY;
+  const first = booking.guest_name.split(' ')[0];
+
+  const intro = isSTS
+    ? 'Thank you for booking Sea to Sky. Two nights, two landscapes, and one long day in between. We are looking forward to having you.'
+    : "Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.";
+
+  const closing = isSTS
+    ? 'Your Sea to Sky guide is on its way, along with directions for both nights and everything worth stopping for on the drive between us.'
+    : "We'll be in touch shortly with check-in details and directions to the cabin.";
+
+  const row = (label, value) =>
+    `<tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">${label}</span><br><span style="color: #32322B; font-size: 16px;">${value}</span></td></tr>`;
+
+  const stayRows = isSTS
+    ? row('Night one &middot; Hop Farm Beach', longDate(booking.check_in))
+      + row('Night two &middot; Bergaliv', longDate(addDays(booking.check_in, 1)))
+      + row('Home', longDate(addDays(booking.check_in, 2)))
+    : row('Check-in', longDate(booking.check_in))
+      + row('Check-out', longDate(booking.check_out));
+
+  const details =
+    `<tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr>`
+    + stayRows
+    + row('Guests', booking.guests)
+    + `<tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">${isSTS ? 'Sea to Sky Confirmed' : 'Booking Confirmed'}</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${first},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${intro}</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0">${details}</table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${closing}</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> &middot; +46 707314500</p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`;
+}
+
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -294,6 +359,16 @@ app.get('/api/settings', (req, res) => {
     maxGuests: parseInt(getSetting('max_guests') || '4'),
     currency: 'SEK'
   });
+});
+
+app.get('/api/sea-to-sky', (req, res) => {
+  const dates = seaToSkyDates().map(date => ({
+    date,
+    bergaliv: addDays(date, 1),
+    checkOut: addDays(date, 2),
+    available: isDateAvailable(date, addDays(date, 1))
+  }));
+  res.json({ price: seaToSkyPrice(), nights: 2, guests: 2, dates });
 });
 
 app.get('/api/unavailable', (req, res) => {
@@ -356,10 +431,15 @@ app.post('/api/lead', apiLimiter, (req, res) => {
 app.post('/api/checkout', checkoutLimiter, async (req, res) => {
   if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
 
-  const { guestName, guestEmail, guestPhone, checkIn, checkOut, guests } = req.body;
+  const { guestName, guestEmail, guestPhone, checkIn, guests, product } = req.body;
+  const isSeaToSky = product === SEA_TO_SKY;
+
+  // Sea to Sky is a fixed two-night trip: night one here, night two at Bergaliv.
+  // Only our night sits in the calendar, so check-out is always the next day.
+  const checkOut = isSeaToSky ? (checkIn ? addDays(checkIn, 1) : null) : req.body.checkOut;
 
   const errors = [];
-  const maxGuests = parseInt(getSetting('max_guests') || '4');
+  const maxGuests = isSeaToSky ? 2 : parseInt(getSetting('max_guests') || '4');
 
   const cleanName = sanitize(guestName);
   const cleanEmail = sanitize(guestEmail);
@@ -378,12 +458,13 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
   if (checkInDate < today) errors.push('Cannot book past dates');
   if (checkOutDate <= checkInDate) errors.push('Check-out must be after check-in');
   if (checkIn && checkOut && !isDateAvailable(checkIn, checkOut)) errors.push('Selected dates are not available');
+  if (isSeaToSky && seaToSkyDates().indexOf(checkIn) === -1) errors.push('That date is not part of Sea to Sky');
 
   if (errors.length > 0) return res.status(400).json({ error: errors.join(', ') });
 
   const rate = parseInt(getSetting('nightly_rate') || '3495');
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-  const total = nights * rate;
+  const total = isSeaToSky ? seaToSkyPrice() : nights * rate;
   const ref = generateRef();
 
   try {
@@ -395,8 +476,10 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
         price_data: {
           currency: 'sek',
           product_data: {
-            name: 'Hop Farm Beach - Cabin Stay',
-            description: `${nights} night${nights > 1 ? 's' : ''} | ${checkIn} to ${checkOut}`
+            name: isSeaToSky ? 'Sea to Sky - Hop Farm Beach & Bergaliv' : 'Hop Farm Beach - Cabin Stay',
+            description: isSeaToSky
+              ? `Two nights | ${checkIn} Hop Farm Beach, ${addDays(checkIn, 1)} Bergaliv`
+              : `${nights} night${nights > 1 ? 's' : ''} | ${checkIn} to ${checkOut}`
           },
           unit_amount: total * 100
         },
@@ -407,8 +490,8 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
       cancel_url: `${SITE_URL}?cancelled=true`
     });
 
-    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending')`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id);
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status, product)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending', ?)`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id, isSeaToSky ? SEA_TO_SKY : 'cabin');
 
     // Send admin notification about new booking attempt
     if (resend) {
@@ -416,15 +499,15 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
         await resend.emails.send({
           from: 'Hop Farm Beach <info@hopfarmbeach.com>',
           to: 'info@hopfarmbeach.com',
-          subject: `New Booking Attempt - ${ref}`,
-          html: `<h2>New Booking Attempt</h2>
+          subject: `New Booking Attempt${isSeaToSky ? ' (Sea to Sky)' : ''} - ${ref}`,
+          html: `<h2>New Booking Attempt${isSeaToSky ? ' - Sea to Sky' : ''}</h2>
             <p>Someone just started the checkout process:</p>
             <ul>
               <li><strong>Reference:</strong> ${ref}</li>
               <li><strong>Guest:</strong> ${cleanName}</li>
               <li><strong>Email:</strong> ${cleanEmail}</li>
               <li><strong>Phone:</strong> ${cleanPhone || 'Not provided'}</li>
-              <li><strong>Dates:</strong> ${checkIn} to ${checkOut} (${nights} nights)</li>
+              <li><strong>Dates:</strong> ${isSeaToSky ? `${checkIn} Hop Farm Beach, then ${addDays(checkIn, 1)} Bergaliv` : `${checkIn} to ${checkOut} (${nights} nights)`}</li>
               <li><strong>Guests:</strong> ${guests}</li>
               <li><strong>Total:</strong> SEK ${total.toLocaleString()}</li>
             </ul>
@@ -470,8 +553,8 @@ app.get('/api/confirm', async (req, res) => {
             from: 'Hop Farm Beach <info@hopfarmbeach.com>',
             to: booking.guest_email,
             cc: 'info@hopfarmbeach.com',
-            subject: `Booking Confirmed - ${booking.booking_ref}`,
-            html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">Booking Confirmed</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${booking.guest_name.split(' ')[0]},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Thank you for your booking. We're looking forward to hosting you at Hop Farm Beach.</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-in</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_in + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Check-out</span><br><span style="color: #32322B; font-size: 16px;">${new Date(booking.check_out + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></td></tr><tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Guests</span><br><span style="color: #32322B; font-size: 16px;">${booking.guests}</span></td></tr><tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr></table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">We'll be in touch shortly with check-in details and directions to the cabin.</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> · +46 707314500</p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`
+            subject: `${booking.product === SEA_TO_SKY ? 'Sea to Sky Confirmed' : 'Booking Confirmed'} - ${booking.booking_ref}`,
+            html: confirmationHtml(booking)
           });
         } catch (emailErr) {
           console.error('Email send error:', emailErr);

@@ -1430,16 +1430,21 @@ function AdminPage() {
   const todayISO = new Date().toISOString().slice(0, 10)
   // Money, worked out from whatever prices the bookings actually carry.
   const kr = n => Math.round(Number(n) || 0).toLocaleString('sv-SE') + ' kr'
-  const live = bookings.filter(b => b.status !== 'cancelled')
+  // Only confirmed bookings are money. Pending ones are abandoned checkouts
+  // and unpaid holds, and counting them made the totals look twice the truth.
+  const paid = bookings.filter(b => b.status === 'confirmed')
+  const held = bookings.filter(b => b.status === 'pending')
   const thisYear = String(new Date().getFullYear())
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
   const sumOf = list => list.reduce((tot, b) => tot + (Number(b.total_amount) || 0), 0)
-  const ytd = live.filter(b => (b.check_in || '').slice(0, 4) === thisYear)
-  const soon = live.filter(b => b.check_in >= todayISO && b.check_in <= in30)
-  const priced = live.filter(b => Number(b.total_amount) > 0)
+  const yearPaid = paid.filter(b => (b.check_in || '').slice(0, 4) === thisYear)
+  const done = yearPaid.filter(b => b.check_out < todayISO)
+  const ahead = paid.filter(b => b.check_out >= todayISO)
+  const soon = paid.filter(b => b.check_in >= todayISO && b.check_in <= in30)
+  const priced = paid.filter(b => Number(b.total_amount) > 0)
   const bySource = {}
-  live.forEach(b => { const s = b.source || 'direct'; bySource[s] = bySource[s] || { n: 0, v: 0 }; bySource[s].n++; bySource[s].v += Number(b.total_amount) || 0 })
-  const missingPrice = live.length - priced.length
+  paid.forEach(b => { const s = b.source || 'direct'; bySource[s] = bySource[s] || { n: 0, v: 0 }; bySource[s].n++; bySource[s].v += Number(b.total_amount) || 0 })
+  const missingPrice = paid.filter(b => !Number(b.total_amount) && (b.source || '') !== 'admin' && b.guest_name.indexOf('Admin') !== 0).length
   const visibleBookings = bookings.filter(b => {
     if (filterSource !== 'all' && (b.source || 'direct') !== filterSource) return false
     if (filterWhen === 'upcoming' && (b.check_out < todayISO || b.status === 'cancelled')) return false
@@ -1710,10 +1715,10 @@ function AdminPage() {
             )}
           <div className="grid gap-3 mb-4" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))'}}>
             {[
-              [thisYear + ' so far', ytd.length + ' stays', kr(sumOf(ytd))],
-              ['Next 30 days', soon.length + ' stays', kr(sumOf(soon))],
-              ['All time', live.length + ' stays', kr(sumOf(live))],
-              ['Average booking', priced.length + ' with a price', priced.length ? kr(sumOf(priced) / priced.length) : '\u2014']
+              ['Earned in ' + thisYear, done.length + ' stays finished', kr(sumOf(done))],
+              ['Booked ahead', ahead.length + ' still to come', kr(sumOf(ahead))],
+              [thisYear + ' in total', yearPaid.length + ' stays', kr(sumOf(yearPaid))],
+              ['Average booking', priced.length + ' confirmed', priced.length ? kr(sumOf(priced) / priced.length) : '\u2014']
             ].map(c => (
               <div key={c[0]} className="rounded-lg px-4 py-3" style={{backgroundColor: 'white'}}>
                 <div className="text-xs" style={{color: colors.dunesGrass}}>{c[0]}</div>
@@ -1726,6 +1731,7 @@ function AdminPage() {
             {Object.entries(bySource).sort((a, b) => b[1].v - a[1].v).map(([s, d]) => (
               <span key={s}>{s} <strong style={{color: colors.smoke}}>{kr(d.v)}</strong> ({d.n})</span>
             ))}
+            {held.length > 0 && <span>{held.length} unpaid holds, {kr(sumOf(held))}, not counted</span>}
             {missingPrice > 0 && <span style={{color: '#991b1b'}}>{missingPrice} with no price yet</span>}
           </div>
           <div className="flex flex-wrap gap-2 items-center mb-3">

@@ -484,6 +484,7 @@ function BookingPage() {
         <nav className="hidden md:flex items-center gap-10">
           <a href="https://hopfarmbeach.com/" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Home</a>
           <a href="https://hopfarmbeach.com/cabin" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
+          <a href="https://hopfarmbeach.com/sea-to-sky" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Sea to Sky</a>
           <a href="https://hopfarmbeach.com/story" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
           <a href="https://hopfarmbeach.com/faq" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
           <a href="https://hopfarmbeach.com/elopement" className="text-sm font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Elopements</a>
@@ -519,6 +520,7 @@ function BookingPage() {
           <nav className="flex flex-col items-center gap-8">
             <a href="https://hopfarmbeach.com/" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Home</a>
             <a href="https://hopfarmbeach.com/cabin" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>The Cabin</a>
+          <a href="https://hopfarmbeach.com/sea-to-sky" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Sea to Sky</a>
             <a href="https://hopfarmbeach.com/story" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Our Story</a>
             <a href="https://hopfarmbeach.com/faq" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>FAQ</a>
             <a href="https://hopfarmbeach.com/elopement" className="text-2xl font-medium transition-opacity hover:opacity-70" style={{color: colors.smoke}}>Elopements</a>
@@ -731,6 +733,10 @@ function BookingPage() {
               >
                 {loading ? 'Processing...' : nights === 0 ? 'Select dates to continue' : 'Continue to Payment'}
               </button>
+
+              <p className="text-xs text-center" style={{color: colors.dunesGrass}}>
+                Payments are handled by Stripe. Hop Farm Beach is part of Way Up North AB, so that name appears at checkout and on your statement.
+              </p>
             </form>
           </div>
         </div>
@@ -750,6 +756,7 @@ function BookingPage() {
             <h4 className="font-dreamers text-xl md:text-2xl mb-5" style={{color: colors.sand}}>Stay</h4>
             <a href="https://hopfarmbeach.com/" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Home</a>
             <a href="https://hopfarmbeach.com/cabin" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>The Cabin</a>
+          <a href="https://hopfarmbeach.com/sea-to-sky" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Sea to Sky</a>
             <a href="https://hopfarmbeach.com/book" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Book Now</a>
             <a href="https://hopfarmbeach.com/elopement" className="block py-2 hover:opacity-70 transition-opacity" style={{color: colors.stone, textDecoration: 'none', fontSize: '0.95rem'}}>Elopements</a>
           </div>

@@ -486,6 +486,13 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
         quantity: 1
       }],
       metadata: { booking_ref: ref },
+      // The Stripe account is in the parent company's name, so say so before
+      // somebody wonders who Way Up North are and abandons the payment.
+      custom_text: {
+        submit: {
+          message: 'Hop Farm Beach is part of Way Up North AB, so that name appears here and on your bank statement.'
+        }
+      },
       success_url: `${SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE_URL}?cancelled=true`
     });

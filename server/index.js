@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync } from 'fs';
 import crypto from 'crypto';
+import { FONTS, receiptHtml, receiptUrl, vatBlockHtml, issuerBlockHtml } from './receipt.js';
 
 // Config
 const __filename = fileURLToPath(import.meta.url);
@@ -34,7 +35,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      // data: is needed for the embedded webfonts on the receipt page
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://hopfarmbeach.com"],
       connectSrc: ["'self'", "https://api.stripe.com"],
       frameSrc: ["https://js.stripe.com", "https://hooks.stripe.com"],
@@ -220,6 +222,13 @@ try {
 try {
   db.exec(`ALTER TABLE bookings ADD COLUMN product TEXT NOT NULL DEFAULT 'cabin'`);
 } catch (e) {}
+// Business guests need the company on the receipt, not their own name
+try {
+  db.exec(`ALTER TABLE bookings ADD COLUMN company_name TEXT`);
+} catch (e) {}
+try {
+  db.exec(`ALTER TABLE bookings ADD COLUMN company_vat TEXT`);
+} catch (e) {}
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -307,6 +316,7 @@ function longDate(dateStr) {
 function confirmationHtml(booking) {
   const isSTS = booking.product === SEA_TO_SKY;
   const first = booking.guest_name.split(' ')[0];
+  const rUrl = receiptUrl(SITE_URL, booking.booking_ref);
 
   const intro = isSTS
     ? 'Thank you for booking Sea to Sky. Two nights, two landscapes, and one long day in between. We are looking forward to having you.'
@@ -329,10 +339,12 @@ function confirmationHtml(booking) {
   const details =
     `<tr><td style="padding-bottom: 12px;"><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking Reference</span><br><span style="color: #32322B; font-size: 18px; font-weight: 600;">${booking.booking_ref}</span></td></tr>`
     + stayRows
-    + row('Guests', booking.guests)
-    + `<tr><td><span style="color: #767460; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total Paid</span><br><span style="color: #32322B; font-size: 16px;">SEK ${booking.total_amount.toLocaleString()}</span></td></tr>`;
+    + row('Guests', booking.guests);
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">${isSTS ? 'Sea to Sky Confirmed' : 'Booking Confirmed'}</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${first},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${intro}</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0">${details}</table></td></tr></table><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${closing}</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> &middot; +46 707314500</p></td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`;
+
+  const receiptButton = `<table cellpadding="0" cellspacing="0" style="margin: 0 0 25px;"><tr><td style="background-color: #32322B; border-radius: 4px;"><a href="${rUrl}" target="_blank" style="display: inline-block; padding: 13px 26px; color: #FDFCFA; text-decoration: none; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">View or print your receipt</a></td></tr></table>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #E1D9CA; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; padding: 40px 20px;"><tr><td align="center"><table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; max-width: 100%;"><tr><td style="background-color: #ffffff; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/hop-farm-beach-logo.png" alt="Hop Farm Beach" style="height: 50px; width: auto;" /></a></td></tr><tr><td style="padding: 20px 30px 40px;"><h2 style="color: #32322B; margin: 0 0 20px; font-size: 20px; font-weight: normal;">${isSTS ? 'Sea to Sky Confirmed' : 'Booking Confirmed'}</h2><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">Hi ${first},</p><p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${intro}</p><table width="100%" cellpadding="0" cellspacing="0" style="background-color: #E1D9CA; border-radius: 8px; margin-bottom: 25px;"><tr><td style="padding: 25px;"><table width="100%" cellpadding="0" cellspacing="0">${details}</table>${vatBlockHtml(booking)}</td></tr></table>${receiptButton}<p style="color: #32322B; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">${closing}</p><p style="color: #767460; font-size: 14px; line-height: 1.6; margin: 0;">Questions? Just reply to this email or contact us at<br><a href="mailto:info@hopfarmbeach.com" style="color: #32322B;">info@hopfarmbeach.com</a> &middot; +46 707314500</p>${issuerBlockHtml()}</td></tr><tr><td style="background-color: #32322B; padding: 30px; text-align: center;"><a href="https://www.hopfarmbeach.com" target="_blank"><img src="https://hopfarmbeach.com/wp-content/uploads/2026/01/Logo_HFB_Stamp_round_sand.png" alt="Hop Farm Beach" style="height: 70px; width: auto; margin-bottom: 15px;" /></a><p style="color: #B8A68A; margin: 0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">Screens Off, Nature On</p></td></tr></table></td></tr></table></body></html>`;
 }
 
 function requireAuth(req, res, next) {
@@ -350,6 +362,26 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
+
+// ---- Receipt ------------------------------------------------------------
+// Public, keyed on the booking reference, which is what the guest already has.
+// Registered before the SPA catch-all so it is not swallowed by it.
+app.get('/receipt/:ref', (req, res) => {
+  const ref = String(req.params.ref || '').toUpperCase().trim();
+  if (!/^HFB-[A-Z0-9]{6}$/.test(ref)) {
+    return res.status(400).send('Invalid reference');
+  }
+
+  const booking = db.prepare('SELECT * FROM bookings WHERE booking_ref = ?').get(ref);
+  if (!booking) return res.status(404).send('Receipt not found');
+  if (booking.status === 'pending') {
+    return res.status(404).send('This booking has not been paid, so there is no receipt yet.');
+  }
+
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Robots-Tag', 'noindex, nofollow');
+  res.type('html').send(receiptHtml(booking, FONTS));
+});
 
 // Public API Routes
 app.get('/api/settings', (req, res) => {
@@ -431,7 +463,7 @@ app.post('/api/lead', apiLimiter, (req, res) => {
 app.post('/api/checkout', checkoutLimiter, async (req, res) => {
   if (!stripe) return res.status(500).json({ error: 'Payment system not configured' });
 
-  const { guestName, guestEmail, guestPhone, checkIn, guests, product } = req.body;
+  const { guestName, guestEmail, guestPhone, checkIn, guests, product, companyName, companyVat } = req.body;
   const isSeaToSky = product === SEA_TO_SKY;
 
   // Sea to Sky is a fixed two-night trip: night one here, night two at Bergaliv.
@@ -444,6 +476,8 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
   const cleanName = sanitize(guestName);
   const cleanEmail = sanitize(guestEmail);
   const cleanPhone = sanitize(guestPhone);
+  const cleanCompany = sanitize(companyName);
+  const cleanVat = sanitize(companyVat);
 
   if (!cleanName || cleanName.length < 2) errors.push('Valid name is required');
   if (!cleanEmail || !isValidEmail(cleanEmail)) errors.push('Valid email is required');
@@ -497,8 +531,8 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
       cancel_url: `${SITE_URL}?cancelled=true`
     });
 
-    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status, product)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending', ?)`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id, isSeaToSky ? SEA_TO_SKY : 'cabin');
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, guest_phone, check_in, check_out, nights, guests, total_amount, stripe_session_id, source, status, product, company_name, company_vat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'website', 'pending', ?, ?, ?)`).run(ref, cleanName, cleanEmail, cleanPhone || null, checkIn, checkOut, nights, guests, total, session.id, isSeaToSky ? SEA_TO_SKY : 'cabin', cleanCompany || null, cleanVat || null);
 
     // Send admin notification about new booking attempt
     if (resend) {
@@ -514,6 +548,7 @@ app.post('/api/checkout', checkoutLimiter, async (req, res) => {
               <li><strong>Guest:</strong> ${cleanName}</li>
               <li><strong>Email:</strong> ${cleanEmail}</li>
               <li><strong>Phone:</strong> ${cleanPhone || 'Not provided'}</li>
+              ${cleanCompany ? `<li><strong>Company:</strong> ${cleanCompany}${cleanVat ? ` (${cleanVat})` : ''}</li>` : ''}
               <li><strong>Dates:</strong> ${isSeaToSky ? `${checkIn} Hop Farm Beach, then ${addDays(checkIn, 1)} Bergaliv` : `${checkIn} to ${checkOut} (${nights} nights)`}</li>
               <li><strong>Guests:</strong> ${guests}</li>
               <li><strong>Total:</strong> SEK ${total.toLocaleString()}</li>
@@ -556,12 +591,13 @@ app.get('/api/confirm', async (req, res) => {
 
       if (resend) {
         try {
+          const fresh = db.prepare('SELECT * FROM bookings WHERE id = ?').get(booking.id);
           await resend.emails.send({
             from: 'Hop Farm Beach <info@hopfarmbeach.com>',
             to: booking.guest_email,
             cc: 'info@hopfarmbeach.com',
             subject: `${booking.product === SEA_TO_SKY ? 'Sea to Sky Confirmed' : 'Booking Confirmed'} - ${booking.booking_ref}`,
-            html: confirmationHtml(booking)
+            html: confirmationHtml(fresh)
           });
         } catch (emailErr) {
           console.error('Email send error:', emailErr);
@@ -577,7 +613,8 @@ app.get('/api/confirm', async (req, res) => {
       checkOut: booking.check_out,
       nights: booking.nights,
       guests: booking.guests,
-      totalAmount: booking.total_amount
+      totalAmount: booking.total_amount,
+      receiptUrl: receiptUrl(SITE_URL, booking.booking_ref)
     });
   } catch (err) {
     console.error('Confirm error:', err.message);
@@ -599,6 +636,38 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
 app.get('/api/admin/bookings', requireAuth, (req, res) => {
   const bookings = db.prepare('SELECT * FROM bookings ORDER BY created_at DESC').all();
   res.json(bookings);
+});
+
+// Email a guest their receipt on request, straight from the admin
+app.post('/api/admin/receipt/:id', requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
+  if (!booking) return res.status(404).json({ error: 'No such booking' });
+  if (!booking.guest_email || !isValidEmail(booking.guest_email)) {
+    return res.status(400).json({ error: 'No valid email on this booking' });
+  }
+  if (!resend) return res.status(500).json({ error: 'Email not configured' });
+
+  const rUrl = receiptUrl(SITE_URL, booking.booking_ref);
+  try {
+    await resend.emails.send({
+      from: 'Hop Farm Beach <info@hopfarmbeach.com>',
+      to: booking.guest_email,
+      cc: 'info@hopfarmbeach.com',
+      subject: `Receipt - ${booking.booking_ref}`,
+      html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#32322B;font-size:16px;line-height:1.6;max-width:600px;">
+        <p>Hi ${booking.guest_name.split(' ')[0]},</p>
+        <p>Here is your receipt for booking ${booking.booking_ref}. Open it and use the button to save it as a PDF.</p>
+        <p><a href="${rUrl}" style="display:inline-block;background:#32322B;color:#FDFCFA;padding:13px 26px;text-decoration:none;font-size:12px;letter-spacing:2px;text-transform:uppercase;border-radius:4px;">View your receipt</a></p>
+        ${vatBlockHtml(booking)}
+        ${issuerBlockHtml()}
+      </div>`
+    });
+    res.json({ success: true, url: rUrl });
+  } catch (err) {
+    console.error('Receipt email error:', err);
+    res.status(500).json({ error: 'Failed to send receipt' });
+  }
 });
 
 // View captured leads
@@ -645,7 +714,7 @@ app.delete('/api/admin/booking/:id', requireAuth, (req, res) => {
 
 // Manual booking creation (for Booking.com, Airbnb, etc.)
 app.post('/api/admin/booking', requireAuth, (req, res) => {
-  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount } = req.body;
+  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount, companyName, companyVat } = req.body;
 
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
@@ -654,6 +723,8 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
   const cleanName = sanitize(guestName);
   const cleanSource = sanitize(source) || 'manual';
   const cleanCountry = sanitize(country) || null;
+  const cleanCompany = sanitize(companyName) || null;
+  const cleanVat = sanitize(companyVat) || null;
   const ref = generateRef();
 
   const checkInDate = new Date(checkIn);
@@ -661,8 +732,8 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
   try {
-    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, country, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, Math.round(Number(totalAmount) || 0), cleanSource, cleanCountry);
+    db.prepare(`INSERT INTO bookings (booking_ref, guest_name, guest_email, check_in, check_out, nights, guests, total_amount, source, country, status, company_name, company_vat)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?, ?)`).run(ref, cleanName, notes || '', checkIn, checkOut, nights, guests || 2, Math.round(Number(totalAmount) || 0), cleanSource, cleanCountry, cleanCompany, cleanVat);
 
     res.json({ success: true, booking_ref: ref });
   } catch (err) {
@@ -674,7 +745,7 @@ app.post('/api/admin/booking', requireAuth, (req, res) => {
 // Edit booking
 app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
   const { id } = req.params;
-  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount } = req.body;
+  const { guestName, checkIn, checkOut, guests, source, notes, country, totalAmount, companyName, companyVat } = req.body;
 
   if (!guestName || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'Guest name, check-in, and check-out required' });
@@ -683,14 +754,16 @@ app.put('/api/admin/booking/:id', requireAuth, (req, res) => {
   const cleanName = sanitize(guestName);
   const cleanSource = sanitize(source) || 'manual';
   const cleanCountry = sanitize(country) || null;
+  const cleanCompany = sanitize(companyName) || null;
+  const cleanVat = sanitize(companyVat) || null;
 
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
   const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
   try {
-    db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ?, total_amount = ? WHERE id = ?`)
-      .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, Math.round(Number(totalAmount) || 0), id);
+    db.prepare(`UPDATE bookings SET guest_name = ?, guest_email = ?, check_in = ?, check_out = ?, nights = ?, guests = ?, source = ?, country = ?, total_amount = ?, company_name = ?, company_vat = ? WHERE id = ?`)
+      .run(cleanName, notes || '', checkIn, checkOut, nights, guests || 2, cleanSource, cleanCountry, Math.round(Number(totalAmount) || 0), cleanCompany, cleanVat, id);
 
     res.json({ success: true });
   } catch (err) {
